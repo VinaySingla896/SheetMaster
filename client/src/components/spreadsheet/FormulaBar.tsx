@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { FormulaHelp } from "./FormulaHelp";
 
 interface FormulaBarProps {
   value: string;
@@ -7,14 +8,15 @@ interface FormulaBarProps {
 
 export function FormulaBar({ value, onChange }: FormulaBarProps) {
   return (
-    <div className="flex items-center gap-2 p-2 border-b">
-      <span className="text-sm font-medium">fx</span>
+    <div className="border-b border-gray-300 p-2 flex items-center gap-2 bg-white">
+      <div className="text-gray-500">fx</div>
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Enter formula"
-        className="flex-1"
+        className="flex-grow"
+        placeholder="Enter a value or start with = for formulas"
       />
+      <FormulaHelp />
     </div>
   );
 }

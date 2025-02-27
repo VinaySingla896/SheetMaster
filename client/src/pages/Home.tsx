@@ -55,11 +55,95 @@ export default function Home() {
       cell.formula = value;
       const evaluator = new FormulaEvaluator(newData.cells);
       cell.value = evaluator.evaluateFormula(value, [ref]);
+      
+      // For REMOVE_DUPLICATES, we need to clear duplicate rows
+      if (value.startsWith("=REMOVE_DUPLICATES") && typeof cell.value === 'string' && cell.value.includes("duplicate rows found")) {
+        // Extract range from formula
+        const match = value.match(/=REMOVE_DUPLICATES\((.*)\)/);
+        if (match && match[1]) {
+          const range = match[1].trim();
+          handleRemoveDuplicates(range);
+        }
+      }
     }
 
     newData.cells[ref] = cell;
     setSheetData(newData);
     updateSheet.mutate(newData);
+  };
+  
+  // Function to handle removing duplicate rows
+  const handleRemoveDuplicates = (range: string) => {
+    // Parse the range (A1:C5 format)
+    const rangeMatch = range.match(/^([A-Z])(\d+):([A-Z])(\d+)$/);
+    if (!rangeMatch) return;
+    
+    const startCol = rangeMatch[1].charCodeAt(0);
+    const startRow = parseInt(rangeMatch[2]);
+    const endCol = rangeMatch[3].charCodeAt(0);
+    const endRow = parseInt(rangeMatch[4]);
+    
+    // Group cells by row
+    const rowMap = new Map<number, Map<string, CellData>>();
+    
+    // Get all cells in the range
+    for (let row = startRow; row <= endRow; row++) {
+      for (let col = startCol; col <= endCol; col++) {
+        const cellRef = `${String.fromCharCode(col)}${row}`;
+        const cell = sheetData.cells[cellRef];
+        
+        if (cell) {
+          if (!rowMap.has(row)) {
+            rowMap.set(row, new Map());
+          }
+          rowMap.get(row)?.set(cellRef, cell);
+        }
+      }
+    }
+    
+    // Identify duplicate rows
+    const rows: {row: number, values: string}[] = [];
+    for (const [row, cells] of rowMap.entries()) {
+      // Create a string representation of the row values
+      const rowValues = Array.from(cells.values())
+        .map(cell => String(cell.value ?? ''))
+        .join('|');
+      rows.push({row, values: rowValues});
+    }
+    
+    // Find duplicates (keeping the first occurrence)
+    const seen = new Set<string>();
+    const duplicateRows = new Set<number>();
+    
+    for (const {row, values} of rows) {
+      if (seen.has(values)) {
+        duplicateRows.add(row);
+      } else {
+        seen.add(values);
+      }
+    }
+    
+    // Clear cells in duplicate rows
+    if (duplicateRows.size > 0) {
+      const newData = { ...sheetData };
+      
+      for (const row of duplicateRows) {
+        for (let col = startCol; col <= endCol; col++) {
+          const cellRef = `${String.fromCharCode(col)}${row}`;
+          if (newData.cells[cellRef]) {
+            delete newData.cells[cellRef];
+          }
+        }
+      }
+      
+      setSheetData(newData);
+      updateSheet.mutate(newData);
+      
+      toast({
+        title: "Duplicates Removed",
+        description: `Removed ${duplicateRows.size} duplicate rows`,
+      });
+    }
   };
 
   const handleFormatChange = (format: Partial<CellData["format"]>) => {

@@ -5,6 +5,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 0 8px;
+  box-sizing: border-box;
 }
 
 .cell-container {

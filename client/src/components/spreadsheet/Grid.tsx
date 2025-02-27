@@ -26,7 +26,7 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
 
   const baseHeight = "h-[25px]";
   const cellStyle = `box-border ${baseHeight}`;
-  const headerStyle = `border border-gray-300 bg-gray-100 p-1 text-center box-border ${baseHeight}`;
+  const headerStyle = `border border-gray-300 bg-gray-100 p-1 text-center box-border ${baseHeight} overflow-hidden`;
   
   // Track column widths
   const [columnWidths, setColumnWidths] = useState<number[]>(
@@ -86,7 +86,7 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
   return (
     <div className="overflow-auto" onMouseUp={handleMouseUp}>
       <div className="flex">
-        <div className={headerStyle} /> {/* Corner spacer */}
+        <div className={headerStyle} style={{ width: '50px', minWidth: '50px' }} /> {/* Corner spacer */}
         {Array.from({ length: data.colCount }).map((_, col) => (
           <div 
             key={col} 
@@ -99,7 +99,7 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
       </div>
       {Array.from({ length: data.rowCount }).map((_, row) => (
         <div key={row} className="flex">
-          <div className={headerStyle}>
+          <div className={headerStyle} style={{ width: '50px', minWidth: '50px' }}>
             {row + 1}
           </div>
           {Array.from({ length: data.colCount }).map((_, col) => {
@@ -116,7 +116,7 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
             return (
               <div
                 key={cellRef}
-                className={`${cellStyle}`}
+                className={`${cellStyle} border border-gray-200`}
                 style={{
                   width: `${columnWidths[col]}px`, 
                   minWidth: `${columnWidths[col]}px`

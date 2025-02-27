@@ -59,7 +59,13 @@ export function Cell({ data, isSelected, highlightText, onSelect, onChange }: Ce
         data.format?.bold && "font-bold",
         data.format?.italic && "italic"
       )}
-      style={{ boxSizing: 'border-box', color: data.format?.color, fontSize: data.format?.fontSize ? `${data.format.fontSize}px` : undefined }}
+      style={{ 
+        boxSizing: 'border-box', 
+        width: '150px',
+        height: '25px',
+        color: data.format?.color, 
+        fontSize: data.format?.fontSize ? `${data.format.fontSize}px` : undefined 
+      }}
       onClick={onSelect}
       onDoubleClick={handleDoubleClick}
     >

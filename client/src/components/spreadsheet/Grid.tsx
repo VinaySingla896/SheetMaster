@@ -23,8 +23,10 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
     format: {}
   });
 
-  const cellStyle = "w-[150px] h-[25px] box-border";
-  const headerStyle = "border border-gray-300 bg-gray-100 p-1 text-center box-border w-[150px] h-[25px]";
+  const baseWidth = "w-[150px]";
+  const baseHeight = "h-[25px]";
+  const cellStyle = `${baseWidth} ${baseHeight} box-border`;
+  const headerStyle = `border border-gray-300 bg-gray-100 p-1 text-center box-border ${baseWidth} ${baseHeight}`;
 
   return (
     <div className="overflow-auto">

@@ -24,7 +24,7 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
     format: {}
   });
 
-  const baseHeight = "h-[25px]";
+  const baseHeight = "h-[35px]";
   const cellStyle = `box-border ${baseHeight}`;
   const headerStyle = `border border-gray-300 bg-gray-100 p-1 text-center box-border ${baseHeight} overflow-hidden`;
   

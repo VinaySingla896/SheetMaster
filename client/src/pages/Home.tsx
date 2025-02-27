@@ -55,7 +55,7 @@ export default function Home() {
       cell.formula = value;
       const evaluator = new FormulaEvaluator(newData.cells);
       cell.value = evaluator.evaluateFormula(value, [ref]);
-      
+
       // For REMOVE_DUPLICATES, we need to clear duplicate rows
       if (value.startsWith("=REMOVE_DUPLICATES") && typeof cell.value === 'string' && cell.value.includes("duplicate rows found")) {
         // Extract range from formula
@@ -71,77 +71,95 @@ export default function Home() {
     setSheetData(newData);
     updateSheet.mutate(newData);
   };
-  
+
   // Function to handle removing duplicate rows
   const handleRemoveDuplicates = (range: string) => {
-    // Parse the range (A1:C5 format)
-    const rangeMatch = range.match(/^([A-Z])(\d+):([A-Z])(\d+)$/);
-    if (!rangeMatch) return;
-    
-    const startCol = rangeMatch[1].charCodeAt(0);
-    const startRow = parseInt(rangeMatch[2]);
-    const endCol = rangeMatch[3].charCodeAt(0);
-    const endRow = parseInt(rangeMatch[4]);
-    
-    // Group cells by row
-    const rowMap = new Map<number, Map<string, CellData>>();
-    
-    // Get all cells in the range
-    for (let row = startRow; row <= endRow; row++) {
-      for (let col = startCol; col <= endCol; col++) {
-        const cellRef = `${String.fromCharCode(col)}${row}`;
-        const cell = sheetData.cells[cellRef];
-        
-        if (cell) {
-          if (!rowMap.has(row)) {
-            rowMap.set(row, new Map());
-          }
-          rowMap.get(row)?.set(cellRef, cell);
+    try {
+      const [start, end] = range.split(':');
+      if (!start || !end) return;
+
+      // Parse range coordinates
+      const startCol = start.match(/^[A-Z]+/)?.[0] || '';
+      const startRow = parseInt(start.match(/\d+/)?.[0] || '0');
+      const endCol = end.match(/^[A-Z]+/)?.[0] || '';
+      const endRow = parseInt(end.match(/\d+/)?.[0] || '0');
+
+      if (!startCol || !endCol || !startRow || !endRow) return;
+
+      // Extract column names in the range
+      const colToNum = (col: string) => {
+        let num = 0;
+        for (let i = 0; i < col.length; i++) {
+          num = num * 26 + (col.charCodeAt(i) - 64);
         }
-      }
-    }
-    
-    // Identify duplicate rows
-    const rows: {row: number, values: string}[] = [];
-    for (const [row, cells] of rowMap.entries()) {
-      // Create a string representation of the row values
-      const rowValues = Array.from(cells.values())
-        .map(cell => String(cell.value ?? ''))
-        .join('|');
-      rows.push({row, values: rowValues});
-    }
-    
-    // Find duplicates (keeping the first occurrence)
-    const seen = new Set<string>();
-    const duplicateRows = new Set<number>();
-    
-    for (const {row, values} of rows) {
-      if (seen.has(values)) {
-        duplicateRows.add(row);
-      } else {
-        seen.add(values);
-      }
-    }
-    
-    // Clear cells in duplicate rows
-    if (duplicateRows.size > 0) {
+        return num;
+      };
+
+      const numToCol = (num: number) => {
+        let result = '';
+        while (num > 0) {
+          const remainder = (num - 1) % 26;
+          result = String.fromCharCode(65 + remainder) + result;
+          num = Math.floor((num - 1) / 26);
+        }
+        return result;
+      };
+
+      const startColNum = colToNum(startCol);
+      const endColNum = colToNum(endCol);
+
       const newData = { ...sheetData };
-      
-      for (const row of duplicateRows) {
-        for (let col = startCol; col <= endCol; col++) {
-          const cellRef = `${String.fromCharCode(col)}${row}`;
-          if (newData.cells[cellRef]) {
-            delete newData.cells[cellRef];
-          }
+      const rowsContent: Map<string, number> = new Map();
+      const duplicateRows: number[] = [];
+
+      // Identify duplicate rows
+      for (let row = startRow; row <= endRow; row++) {
+        let rowContent = '';
+
+        for (let colNum = startColNum; colNum <= endColNum; colNum++) {
+          const col = numToCol(colNum);
+          const cellKey = `${col}${row}`;
+          const cellValue = newData.cells[cellKey]?.value || '';
+          rowContent += `|${cellValue}|`;
+        }
+
+        if (rowsContent.has(rowContent)) {
+          duplicateRows.push(row);
+        } else {
+          rowsContent.set(rowContent, row);
         }
       }
-      
-      setSheetData(newData);
-      updateSheet.mutate(newData);
-      
+
+      // Clear duplicate rows
+      if (duplicateRows.length > 0) {
+        for (const row of duplicateRows) {
+          for (let colNum = startColNum; colNum <= endColNum; colNum++) {
+            const col = numToCol(colNum);
+            const cellKey = `${col}${row}`;
+            if (newData.cells[cellKey]) {
+              newData.cells[cellKey].value = '';
+            }
+          }
+        }
+
+        setSheetData(newData);
+
+        toast({
+          title: "Duplicates Removed",
+          description: `Removed ${duplicateRows.length} duplicate rows`,
+        });
+      } else {
+        toast({
+          title: "No Duplicates Found",
+          description: "No duplicate rows were found in the specified range",
+        });
+      }
+    } catch (error) {
+      console.error("Error removing duplicates:", error);
       toast({
-        title: "Duplicates Removed",
-        description: `Removed ${duplicateRows.size} duplicate rows`,
+        title: "Error",
+        description: "Failed to remove duplicates",
+        variant: "destructive"
       });
     }
   };
@@ -170,7 +188,7 @@ export default function Home() {
 
     const newData = { ...sheetData };
     let replacedCount = 0;
-    
+
     // Replace across all cells
     Object.entries(newData.cells).forEach(([cellKey, cellData]) => {
       if (cellData?.value) {
@@ -221,7 +239,7 @@ export default function Home() {
     // Search across all cells
     let found = false;
     const cellEntries = Object.entries(sheetData.cells);
-    
+
     for (const [cellKey, cellData] of cellEntries) {
       if (cellData?.value && String(cellData.value).match(new RegExp(text, 'gi'))) {
         found = true;

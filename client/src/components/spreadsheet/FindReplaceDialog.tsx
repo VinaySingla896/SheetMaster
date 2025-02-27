@@ -62,11 +62,11 @@ export function FindReplaceDialog({ isOpen, onClose, onApply, onFind }: FindRepl
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleFind} variant="secondary">
+            <Button onClick={handleFind} variant="secondary" disabled={!findText.trim()}>
               Find
             </Button>
           </div>
-          <Button onClick={handleApply} disabled={!replaceText}>
+          <Button onClick={handleApply} disabled={!findText.trim() || !replaceText.trim()}>
             Replace
           </Button>
         </DialogFooter>

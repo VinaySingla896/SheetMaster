@@ -75,50 +75,49 @@ export default function Home() {
   };
 
   const handleFindReplace = (find: string, replace: string) => {
-    if (!selectedCell) {
+    if (!find.trim()) {
       toast({
-        title: "No cell selected",
-        description: "Please select a cell first",
+        title: "Empty search",
+        description: "Please enter text to search for",
         variant: "destructive"
       });
       return;
     }
 
     const newData = { ...sheetData };
-    const cell = newData.cells[selectedCell];
-    if (!cell?.value) {
-      toast({
-        title: "Empty cell",
-        description: "Selected cell is empty",
-        variant: "destructive"
-      });
-      return;
-    }
+    let replacedCount = 0;
+    
+    // Replace across all cells
+    Object.entries(newData.cells).forEach(([cellKey, cellData]) => {
+      if (cellData?.value) {
+        const currentValue = String(cellData.value);
+        if (currentValue.match(new RegExp(find, 'gi'))) {
+          const newValue = currentValue.replace(new RegExp(find, 'gi'), replace);
+          newData.cells[cellKey] = {
+            ...cellData,
+            value: newValue
+          };
+          replacedCount++;
+        }
+      }
+    });
 
-    setHighlightText(find);
-
-    const currentValue = String(cell.value);
-    if (!currentValue.match(new RegExp(find, 'gi'))) {
+    if (replacedCount === 0) {
       toast({
         title: "No matches found",
-        description: `Could not find "${find}" in the selected cell`,
+        description: `Could not find "${find}" in any cell`,
         variant: "destructive"
       });
       return;
     }
-
-    const newValue = currentValue.replace(new RegExp(find, 'gi'), replace);
-    newData.cells[selectedCell] = {
-      ...cell,
-      value: newValue
-    };
 
     setSheetData(newData);
     updateSheet.mutate(newData);
+    setHighlightText(replace);
 
     toast({
       title: "Text replaced",
-      description: `Replaced "${find}" with "${replace}"`,
+      description: `Replaced ${replacedCount} occurrence(s) of "${find}" with "${replace}"`,
     });
 
     // Clear highlight after a short delay
@@ -126,30 +125,32 @@ export default function Home() {
   };
 
   const handleFind = (text: string) => {
-    if (!selectedCell) {
+    if (!text.trim()) {
       toast({
-        title: "No cell selected",
-        description: "Please select a cell first",
+        title: "Empty search",
+        description: "Please enter text to search for",
         variant: "destructive"
       });
       return;
     }
 
-    const cell = sheetData.cells[selectedCell];
-    if (!cell?.value) {
-      toast({
-        title: "Empty cell",
-        description: "Selected cell is empty",
-        variant: "destructive"
-      });
-      return;
+    // Search across all cells
+    let found = false;
+    const cellEntries = Object.entries(sheetData.cells);
+    
+    for (const [cellKey, cellData] of cellEntries) {
+      if (cellData?.value && String(cellData.value).match(new RegExp(text, 'gi'))) {
+        found = true;
+        // Select the first cell with matching content
+        setSelectedCell(cellKey);
+        break;
+      }
     }
 
-    const currentValue = String(cell.value);
-    if (!currentValue.match(new RegExp(text, 'gi'))) {
+    if (!found) {
       toast({
         title: "No matches found",
-        description: `Could not find "${text}" in the selected cell`,
+        description: `Could not find "${text}" in any cell`,
         variant: "destructive"
       });
       return;

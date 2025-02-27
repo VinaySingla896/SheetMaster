@@ -45,7 +45,7 @@ export default function Home() {
   const handleCellChange = (ref: string, value: string) => {
     const newData = { ...sheetData };
     const cell: CellData = { value: value };
-    
+
     if (value.startsWith("=")) {
       cell.formula = value;
       const evaluator = new FormulaEvaluator(newData.cells);
@@ -64,14 +64,37 @@ export default function Home() {
     const cell = newData.cells[selectedCell] || { value: null, format: {} };
     cell.format = { ...cell.format, ...format };
     newData.cells[selectedCell] = cell;
-    
+
+    setSheetData(newData);
+    updateSheet.mutate(newData);
+  };
+
+  const handleFindReplace = (find: string, replace: string) => {
+    if (!selectedCell) return;
+
+    const newData = { ...sheetData };
+    const cell = newData.cells[selectedCell];
+    if (!cell) return;
+
+    const formula = `=FIND_AND_REPLACE(${selectedCell},"${find}","${replace}")`;
+    const evaluator = new FormulaEvaluator(newData.cells);
+    const newValue = evaluator.evaluateFormula(formula, [selectedCell]);
+
+    newData.cells[selectedCell] = {
+      ...cell,
+      value: newValue
+    };
+
     setSheetData(newData);
     updateSheet.mutate(newData);
   };
 
   return (
     <div className="h-screen flex flex-col">
-      <Toolbar onFormatChange={handleFormatChange} />
+      <Toolbar 
+        onFormatChange={handleFormatChange}
+        onFindReplace={handleFindReplace}
+      />
       <FormulaBar
         value={selectedCell ? (sheetData.cells[selectedCell]?.formula || sheetData.cells[selectedCell]?.value?.toString() || "") : ""}
         onChange={(value) => selectedCell && handleCellChange(selectedCell, value)}

@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bold, Italic, Type } from "lucide-react";
+import { Bold, Italic, Type, Search } from "lucide-react";
+import { FindReplaceDialog } from "./FindReplaceDialog";
 
 interface ToolbarProps {
   onFormatChange: (format: {
@@ -9,39 +11,58 @@ interface ToolbarProps {
     fontSize?: number;
     color?: string;
   }) => void;
+  onFindReplace?: (find: string, replace: string) => void;
 }
 
-export function Toolbar({ onFormatChange }: ToolbarProps) {
+export function Toolbar({ onFormatChange, onFindReplace }: ToolbarProps) {
+  const [showFindReplace, setShowFindReplace] = useState(false);
+
   return (
-    <div className="flex items-center gap-2 p-2 border-b">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => onFormatChange({ bold: true })}
-      >
-        <Bold className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => onFormatChange({ italic: true })}
-      >
-        <Italic className="h-4 w-4" />
-      </Button>
-      <div className="flex items-center gap-2">
-        <Type className="h-4 w-4" />
+    <>
+      <div className="flex items-center gap-2 p-2 border-b">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onFormatChange({ bold: true })}
+        >
+          <Bold className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onFormatChange({ italic: true })}
+        >
+          <Italic className="h-4 w-4" />
+        </Button>
+        <div className="flex items-center gap-2">
+          <Type className="h-4 w-4" />
+          <Input
+            type="number"
+            className="w-16"
+            defaultValue="11"
+            onChange={(e) => onFormatChange({ fontSize: parseInt(e.target.value) })}
+          />
+        </div>
         <Input
-          type="number"
-          className="w-16"
-          defaultValue="11"
-          onChange={(e) => onFormatChange({ fontSize: parseInt(e.target.value) })}
+          type="color"
+          className="w-8 h-8 p-0"
+          onChange={(e) => onFormatChange({ color: e.target.value })}
         />
+        <div className="border-l mx-2 h-6" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShowFindReplace(true)}
+        >
+          <Search className="h-4 w-4" />
+        </Button>
       </div>
-      <Input
-        type="color"
-        className="w-8 h-8 p-0"
-        onChange={(e) => onFormatChange({ color: e.target.value })}
+
+      <FindReplaceDialog
+        isOpen={showFindReplace}
+        onClose={() => setShowFindReplace(false)}
+        onApply={(find, replace) => onFindReplace?.(find, replace)}
       />
-    </div>
+    </>
   );
 }

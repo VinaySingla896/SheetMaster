@@ -86,7 +86,7 @@ export function Cell({ data, isSelected, cellRef, highlightText, onSelect, onCha
     <div
       ref={cellElement}
       className={cn(
-        "border border-gray-300 p-1 overflow-hidden select-none auto-resize-cell", // Added auto-resize-cell class
+        "border border-gray-300 p-1 overflow-hidden select-none auto-resize-cell", 
         isSelected && "bg-blue-100 outline outline-2 outline-blue-500 z-10",
         isInDragSelection && !isSelected && "bg-blue-50",
         data.format?.bold && "font-bold",
@@ -95,7 +95,7 @@ export function Cell({ data, isSelected, cellRef, highlightText, onSelect, onCha
       style={{ 
         boxSizing: 'border-box', 
         width: '100%', 
-        height: '25px',
+        height: '100%',  //This line ensures the cell uses full height.
         color: data.format?.color, 
         fontSize: data.format?.fontSize ? `${data.format.fontSize}px` : undefined,
         position: 'relative'
@@ -114,9 +114,10 @@ export function Cell({ data, isSelected, cellRef, highlightText, onSelect, onCha
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
+          style={{ height: '100%' }} //This line ensures input uses full height.
         />
       ) : (
-        <div className="w-full h-full truncate">{displayValue}</div>
+        <div className="w-full h-full truncate" style={{height: '100%'}}>{displayValue}</div>
       )}
       {isInDragSelection && dragState.startCell === cellRef && (
         <div className="absolute bottom-0 right-0 w-3 h-3 bg-blue-500 border border-white z-20" 

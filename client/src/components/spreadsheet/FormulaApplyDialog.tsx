@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -158,7 +157,7 @@ export function FormulaApplyDialog({
             onChange={(e) => setFormula(e.target.value)}
             placeholder="Enter a formula (e.g., =SUM(A1:A5))"
           />
-          
+
           {previewResult && (
             <div className="text-sm mt-1">
               <Label>Preview:</Label>

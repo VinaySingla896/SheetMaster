@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bold, Italic, Type, Search, Calculator, Function } from "lucide-react";
+import { Bold, Italic, Type, Search, Calculator, FunctionSquare } from "lucide-react";
 import { FindReplaceDialog } from "./FindReplaceDialog";
 import { SheetData } from "@shared/schema";
 import { FormulaTestDialog } from "./FormulaTestDialog";
@@ -81,7 +81,7 @@ export function Toolbar({
           disabled={selectedCells.length === 0}
           title={selectedCells.length === 0 ? "Select cells first" : "Apply formula to selected cells"}
         >
-          <Function className="h-4 w-4" />
+          <FunctionSquare className="h-4 w-4" />
         </Button>
       </div>
 

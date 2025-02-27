@@ -12,9 +12,10 @@ interface ToolbarProps {
     color?: string;
   }) => void;
   onFindReplace?: (find: string, replace: string) => void;
+  onFind?: (text: string) => void;
 }
 
-export function Toolbar({ onFormatChange, onFindReplace }: ToolbarProps) {
+export function Toolbar({ onFormatChange, onFindReplace, onFind }: ToolbarProps) {
   const [showFindReplace, setShowFindReplace] = useState(false);
 
   return (
@@ -62,6 +63,7 @@ export function Toolbar({ onFormatChange, onFindReplace }: ToolbarProps) {
         isOpen={showFindReplace}
         onClose={() => setShowFindReplace(false)}
         onApply={(find, replace) => onFindReplace?.(find, replace)}
+        onFind={(text) => onFind?.(text)}
       />
     </>
   );

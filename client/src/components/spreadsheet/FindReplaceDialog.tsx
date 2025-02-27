@@ -14,11 +14,16 @@ interface FindReplaceDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onApply: (find: string, replace: string) => void;
+  onFind: (text: string) => void;
 }
 
-export function FindReplaceDialog({ isOpen, onClose, onApply }: FindReplaceDialogProps) {
+export function FindReplaceDialog({ isOpen, onClose, onApply, onFind }: FindReplaceDialogProps) {
   const [findText, setFindText] = useState("");
   const [replaceText, setReplaceText] = useState("");
+
+  const handleFind = () => {
+    onFind(findText);
+  };
 
   const handleApply = () => {
     onApply(findText, replaceText);
@@ -31,7 +36,7 @@ export function FindReplaceDialog({ isOpen, onClose, onApply }: FindReplaceDialo
         <DialogHeader>
           <DialogTitle>Find and Replace</DialogTitle>
           <DialogDescription>
-            Enter the text to find and replace in the selected cell
+            Enter text to find. Optionally, provide replacement text to replace found matches.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -44,7 +49,7 @@ export function FindReplaceDialog({ isOpen, onClose, onApply }: FindReplaceDialo
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Replace with</label>
+            <label className="text-sm font-medium">Replace with (optional)</label>
             <Input
               value={replaceText}
               onChange={(e) => setReplaceText(e.target.value)}
@@ -52,11 +57,18 @@ export function FindReplaceDialog({ isOpen, onClose, onApply }: FindReplaceDialo
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
+        <DialogFooter className="flex justify-between">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleFind} variant="secondary">
+              Find
+            </Button>
+          </div>
+          <Button onClick={handleApply} disabled={!replaceText}>
+            Replace
           </Button>
-          <Button onClick={handleApply}>Apply</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -123,11 +123,52 @@ export default function Home() {
     setTimeout(() => setHighlightText(""), 2000);
   };
 
+  const handleFind = (text: string) => {
+    if (!selectedCell) {
+      toast({
+        title: "No cell selected",
+        description: "Please select a cell first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const cell = sheetData.cells[selectedCell];
+    if (!cell?.value) {
+      toast({
+        title: "Empty cell",
+        description: "Selected cell is empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const currentValue = String(cell.value);
+    if (!currentValue.match(new RegExp(text, 'gi'))) {
+      toast({
+        title: "No matches found",
+        description: `Could not find "${text}" in the selected cell`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setHighlightText(text);
+    toast({
+      title: "Text found",
+      description: `Found matches for "${text}"`,
+    });
+
+    // Clear highlight after 5 seconds
+    setTimeout(() => setHighlightText(""), 5000);
+  };
+
   return (
     <div className="h-screen flex flex-col">
       <Toolbar 
         onFormatChange={handleFormatChange}
         onFindReplace={handleFindReplace}
+        onFind={handleFind}
       />
       <FormulaBar
         value={selectedCell ? (sheetData.cells[selectedCell]?.formula || sheetData.cells[selectedCell]?.value?.toString() || "") : ""}

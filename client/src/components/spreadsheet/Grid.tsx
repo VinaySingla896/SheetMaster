@@ -23,19 +23,22 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
     format: {}
   });
 
+  const cellStyle = "w-[100px] h-[25px] box-border";
+  const headerStyle = "border border-gray-300 bg-gray-100 p-1 text-center " + cellStyle;
+
   return (
     <div className="overflow-auto">
       <div className="flex">
-        <div className="w-[100px] h-[25px]" /> {/* Corner spacer - adjusted width */}
+        <div className={headerStyle} /> {/* Corner spacer */}
         {Array.from({ length: data.colCount }).map((_, col) => (
-          <div key={col} className="border border-gray-300 bg-gray-100 p-1 w-[100px] h-[25px] text-center">
+          <div key={col} className={headerStyle}>
             {String.fromCharCode(65 + col)}
           </div>
         ))}
       </div>
       {Array.from({ length: data.rowCount }).map((_, row) => (
         <div key={row} className="flex">
-          <div className="border border-gray-300 bg-gray-100 p-1 w-[100px] h-[25px] text-center">
+          <div className={headerStyle}>
             {row + 1}
           </div>
           {Array.from({ length: data.colCount }).map((_, col) => {

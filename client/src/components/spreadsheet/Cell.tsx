@@ -42,9 +42,9 @@ export function Cell({ data, isSelected, highlightText, onSelect, onChange }: Ce
 
     return (
       <span>
-        {parts.map((part, i) => 
-          part.toLowerCase() === highlightText?.toLowerCase() ? 
-            <span key={i} className="bg-yellow-200">{part}</span> : 
+        {parts.map((part, i) =>
+          part.toLowerCase() === highlightText?.toLowerCase() ?
+            <span key={i} className="bg-yellow-200">{part}</span> :
             part
         )}
       </span>
@@ -54,7 +54,7 @@ export function Cell({ data, isSelected, highlightText, onSelect, onChange }: Ce
   return (
     <div
       className={cn(
-        "border border-gray-200 p-1 min-w-[100px] h-[25px] overflow-hidden",
+        "border border-gray-200 p-1 w-[100px] h-[25px] box-border overflow-hidden",
         isSelected && "border-2 border-blue-500",
         data.format?.bold && "font-bold",
         data.format?.italic && "italic"

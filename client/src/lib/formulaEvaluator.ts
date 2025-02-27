@@ -1,270 +1,310 @@
 
 import { CellData } from "@shared/schema";
 
-type CellMap = Record<string, CellData>;
-
 export class FormulaEvaluator {
-  private cells: CellMap;
-  private visitedCells: Set<string>;
+  private cells: Record<string, CellData>;
+  private processingCells: string[] = [];
 
-  constructor(cells: CellMap) {
+  constructor(cells: Record<string, CellData>) {
     this.cells = cells;
-    this.visitedCells = new Set();
   }
 
-  evaluateFormula(formula: string, dependentRefs: string[] = []): string | number {
-    if (!formula.startsWith('=')) {
-      return formula;
+  evaluateFormula(formula: string, cellsToAvoidCycles: string[] = []): string | number {
+    // Remove the leading equals sign
+    const withoutEquals = formula.substring(1).trim();
+    this.processingCells = [...cellsToAvoidCycles];
+
+    // Check if it's a SUM formula
+    if (withoutEquals.startsWith("SUM(") && withoutEquals.endsWith(")")) {
+      const range = withoutEquals.substring(4, withoutEquals.length - 1);
+      return this.sumRange(range);
+    } 
+    
+    // Check if it's an AVERAGE formula
+    else if (withoutEquals.startsWith("AVERAGE(") && withoutEquals.endsWith(")")) {
+      const range = withoutEquals.substring(8, withoutEquals.length - 1);
+      return this.averageRange(range);
+    } 
+    
+    // Check if it's a MAX formula
+    else if (withoutEquals.startsWith("MAX(") && withoutEquals.endsWith(")")) {
+      const range = withoutEquals.substring(4, withoutEquals.length - 1);
+      return this.maxRange(range);
+    } 
+    
+    // Check if it's a MIN formula
+    else if (withoutEquals.startsWith("MIN(") && withoutEquals.endsWith(")")) {
+      const range = withoutEquals.substring(4, withoutEquals.length - 1);
+      return this.minRange(range);
+    } 
+    
+    // Check if it's a COUNT formula
+    else if (withoutEquals.startsWith("COUNT(") && withoutEquals.endsWith(")")) {
+      const range = withoutEquals.substring(6, withoutEquals.length - 1);
+      return this.countRange(range);
+    } 
+    
+    // Data Quality Functions
+    // Check if it's a TRIM formula
+    else if (withoutEquals.startsWith("TRIM(") && withoutEquals.endsWith(")")) {
+      const cellRef = withoutEquals.substring(5, withoutEquals.length - 1);
+      return this.trimCell(cellRef);
+    } 
+    
+    // Check if it's an UPPER formula
+    else if (withoutEquals.startsWith("UPPER(") && withoutEquals.endsWith(")")) {
+      const cellRef = withoutEquals.substring(6, withoutEquals.length - 1);
+      return this.upperCell(cellRef);
+    } 
+    
+    // Check if it's a LOWER formula
+    else if (withoutEquals.startsWith("LOWER(") && withoutEquals.endsWith(")")) {
+      const cellRef = withoutEquals.substring(6, withoutEquals.length - 1);
+      return this.lowerCell(cellRef);
+    } 
+    
+    // Check if it's a FIND_AND_REPLACE formula
+    else if (withoutEquals.startsWith("FIND_AND_REPLACE(") && withoutEquals.endsWith(")")) {
+      const params = this.parseParams(withoutEquals.substring(16, withoutEquals.length - 1));
+      if (params.length === 3) {
+        return this.findAndReplace(params[0], params[1], params[2]);
+      }
+      return "Error: FIND_AND_REPLACE requires 3 parameters";
     }
-
-    try {
-      const funcMatch = formula.match(/^=([A-Z_]+)\((.*)\)$/);
-      if (!funcMatch) {
-        // Try to evaluate as a cell reference
-        if (formula.match(/^=[A-Z]+[0-9]+$/)) {
-          const ref = formula.substring(1);
-          return this.getCellValue(ref, dependentRefs);
-        }
-        return "FORMULA ERROR";
+    
+    // Check if it's a REMOVE_DUPLICATES formula
+    else if (withoutEquals.startsWith("REMOVE_DUPLICATES(") && withoutEquals.endsWith(")")) {
+      const range = withoutEquals.substring(17, withoutEquals.length - 1);
+      return this.removeDuplicates(range);
+    }
+    
+    // If it's a cell reference, return the value of that cell
+    else if (/^[A-Z]+\d+$/.test(withoutEquals)) {
+      return this.getCellValue(withoutEquals);
+    }
+    
+    // Otherwise, try to evaluate as a mathematical expression
+    else {
+      try {
+        // Replace cell references with their values
+        const withReplacedRefs = withoutEquals.replace(/[A-Z]+\d+/g, (match) => {
+          const value = this.getCellValue(match);
+          if (typeof value === 'number') {
+            return value.toString();
+          } else if (typeof value === 'string' && !isNaN(Number(value))) {
+            return value;
+          }
+          return '0';
+        });
+        
+        // Use Function constructor to safely evaluate the expression
+        return new Function(`return ${withReplacedRefs}`)();
+      } catch (error) {
+        return `Error: ${error instanceof Error ? error.message : String(error)}`;
       }
-
-      const funcName = funcMatch[1];
-      const args = this.parseArgs(funcMatch[2]);
-
-      switch (funcName) {
-        case 'SUM':
-          return this.sum(args);
-        case 'AVERAGE':
-          return this.average(args);
-        case 'MAX':
-          return this.max(args);
-        case 'MIN':
-          return this.min(args);
-        case 'COUNT':
-          return this.count(args);
-        case 'TRIM':
-          return this.trim(args);
-        case 'UPPER':
-          return this.upper(args);
-        case 'LOWER':
-          return this.lower(args);
-        case 'REMOVE_DUPLICATES':
-          return this.removeDuplicates(args);
-        case 'FIND_AND_REPLACE':
-          return this.findAndReplace(args);
-        default:
-          return "UNKNOWN FUNCTION";
-      }
-    } catch (error) {
-      console.error("Formula evaluation error:", error);
-      return "ERROR";
     }
   }
 
-  private parseArgs(argsStr: string): string[] {
-    const args: string[] = [];
-    let currentArg = '';
-    let inQuotes = false;
-    let depth = 0;
-
-    for (let i = 0; i < argsStr.length; i++) {
-      const char = argsStr[i];
+  private parseParams(paramsStr: string): string[] {
+    const params: string[] = [];
+    let currentParam = '';
+    let insideQuotes = false;
+    
+    for (let i = 0; i < paramsStr.length; i++) {
+      const char = paramsStr[i];
       
-      if (char === '"' && argsStr[i-1] !== '\\') {
-        inQuotes = !inQuotes;
-        currentArg += char;
-      } else if (char === '(' && !inQuotes) {
-        depth++;
-        currentArg += char;
-      } else if (char === ')' && !inQuotes) {
-        depth--;
-        currentArg += char;
-      } else if (char === ',' && !inQuotes && depth === 0) {
-        args.push(currentArg.trim());
-        currentArg = '';
+      if (char === '"' && (i === 0 || paramsStr[i-1] !== '\\')) {
+        insideQuotes = !insideQuotes;
+        currentParam += char;
+      } else if (char === ',' && !insideQuotes) {
+        params.push(currentParam.trim());
+        currentParam = '';
       } else {
-        currentArg += char;
+        currentParam += char;
       }
     }
     
-    if (currentArg.trim()) {
-      args.push(currentArg.trim());
+    if (currentParam) {
+      params.push(currentParam.trim());
     }
     
-    return args;
+    return params.map(param => {
+      // If param is a cell reference, get its value
+      if (/^[A-Z]+\d+$/.test(param)) {
+        const value = this.getCellValue(param);
+        return value.toString();
+      }
+      // If param is in quotes, remove the quotes
+      if (param.startsWith('"') && param.endsWith('"')) {
+        return param.substring(1, param.length - 1);
+      }
+      return param;
+    });
   }
 
-  private getCellValue(ref: string, dependentRefs: string[] = []): string | number {
-    if (dependentRefs.includes(ref)) {
-      return "#CIRCULAR_REF";
+  private getCellValue(cellRef: string): string | number {
+    // Check for circular references
+    if (this.processingCells.includes(cellRef)) {
+      return "#CIRCULAR_REF!";
     }
-
-    const cell = this.cells[ref];
-    if (!cell) return 0;
-
-    if (cell.formula && cell.formula.startsWith('=')) {
-      const newDependentRefs = [...dependentRefs, ref];
-      return this.evaluateFormula(cell.formula, newDependentRefs);
+    
+    const cell = this.cells[cellRef];
+    if (!cell) return "";
+    
+    if (cell.formula) {
+      // Add this cell to the list of cells being processed
+      this.processingCells.push(cellRef);
+      const result = this.evaluateFormula(cell.formula, this.processingCells);
+      // Remove this cell from the list when done
+      this.processingCells.pop();
+      return result;
     }
-
-    return cell.value ?? "";
+    
+    if (cell.value === undefined || cell.value === null) return "";
+    
+    // If the value is a number string, convert it to a number
+    if (typeof cell.value === 'string' && !isNaN(Number(cell.value))) {
+      return Number(cell.value);
+    }
+    
+    return cell.value.toString();
   }
 
-  private expandRange(range: string): string[] {
-    const rangeRegex = /^([A-Z]+)(\d+):([A-Z]+)(\d+)$/;
-    const match = range.match(rangeRegex);
-    
-    if (!match) {
-      return [range]; // Not a range, return as is
+  private parseRange(range: string): string[] {
+    // If range is just a single cell, return it
+    if (/^[A-Z]+\d+$/.test(range)) {
+      return [range];
     }
     
-    const startCol = match[1];
-    const startRow = parseInt(match[2]);
-    const endCol = match[3];
-    const endRow = parseInt(match[4]);
+    // If range is a comma-separated list of cells
+    if (range.includes(',')) {
+      return range.split(',').map(cell => cell.trim());
+    }
     
-    const startColNum = this.columnToNumber(startCol);
-    const endColNum = this.columnToNumber(endCol);
+    // Otherwise, assume it's a range like A1:C5
+    const [start, end] = range.split(':').map(ref => ref.trim());
+    if (!start || !end) return [];
+    
+    const startCol = this.getColumnIndex(start.match(/[A-Z]+/)![0]);
+    const startRow = parseInt(start.match(/\d+/)![0], 10);
+    const endCol = this.getColumnIndex(end.match(/[A-Z]+/)![0]);
+    const endRow = parseInt(end.match(/\d+/)![0], 10);
     
     const cells: string[] = [];
-    
-    for (let col = startColNum; col <= endColNum; col++) {
-      const colLetter = this.numberToColumn(col);
+    for (let col = startCol; col <= endCol; col++) {
       for (let row = startRow; row <= endRow; row++) {
-        cells.push(`${colLetter}${row}`);
+        cells.push(`${this.getColumnLetter(col)}${row}`);
       }
     }
     
     return cells;
   }
 
-  private columnToNumber(column: string): number {
-    let result = 0;
-    for (let i = 0; i < column.length; i++) {
-      result = result * 26 + (column.charCodeAt(i) - 64);
-    }
-    return result;
+  private getColumnIndex(col: string): number {
+    return col.split('').reduce((acc, char) => acc * 26 + char.charCodeAt(0) - 64, 0);
   }
 
-  private numberToColumn(num: number): string {
-    let result = '';
-    while (num > 0) {
-      const remainder = (num - 1) % 26;
-      result = String.fromCharCode(65 + remainder) + result;
-      num = Math.floor((num - 1) / 26);
+  private getColumnLetter(index: number): string {
+    let letter = '';
+    while (index > 0) {
+      const remainder = (index - 1) % 26;
+      letter = String.fromCharCode(65 + remainder) + letter;
+      index = Math.floor((index - 1) / 26);
     }
-    return result;
-  }
-
-  private getCellsFromRange(arg: string): string[] {
-    if (arg.includes(':')) {
-      return this.expandRange(arg);
-    }
-    return [arg];
-  }
-
-  private getNumericValues(cells: string[]): number[] {
-    return cells
-      .map(cellRef => this.getCellValue(cellRef))
-      .filter(value => !isNaN(Number(value)))
-      .map(value => Number(value));
+    return letter;
   }
 
   // Mathematical Functions
-  private sum(args: string[]): number {
-    if (args.length === 0) return 0;
-    
-    const allCells = args.flatMap(arg => this.getCellsFromRange(arg));
-    const values = this.getNumericValues(allCells);
-    
-    return values.reduce((sum, value) => sum + value, 0);
+  private sumRange(range: string): number {
+    const cells = this.parseRange(range);
+    return cells.reduce((sum, cell) => {
+      const value = this.getCellValue(cell);
+      return sum + (typeof value === 'number' ? value : 0);
+    }, 0);
   }
 
-  private average(args: string[]): number | string {
-    if (args.length === 0) return 0;
+  private averageRange(range: string): number {
+    const cells = this.parseRange(range);
+    const sum = this.sumRange(range);
+    const count = cells.filter(cell => {
+      const value = this.getCellValue(cell);
+      return typeof value === 'number';
+    }).length;
     
-    const allCells = args.flatMap(arg => this.getCellsFromRange(arg));
-    const values = this.getNumericValues(allCells);
-    
-    if (values.length === 0) return "#DIV/0!";
-    return values.reduce((sum, value) => sum + value, 0) / values.length;
+    return count > 0 ? sum / count : 0;
   }
 
-  private max(args: string[]): number | string {
-    if (args.length === 0) return 0;
+  private maxRange(range: string): number {
+    const cells = this.parseRange(range);
+    let max = Number.NEGATIVE_INFINITY;
     
-    const allCells = args.flatMap(arg => this.getCellsFromRange(arg));
-    const values = this.getNumericValues(allCells);
+    for (const cell of cells) {
+      const value = this.getCellValue(cell);
+      if (typeof value === 'number' && value > max) {
+        max = value;
+      }
+    }
     
-    if (values.length === 0) return "N/A";
-    return Math.max(...values);
+    return max === Number.NEGATIVE_INFINITY ? 0 : max;
   }
 
-  private min(args: string[]): number | string {
-    if (args.length === 0) return 0;
+  private minRange(range: string): number {
+    const cells = this.parseRange(range);
+    let min = Number.POSITIVE_INFINITY;
     
-    const allCells = args.flatMap(arg => this.getCellsFromRange(arg));
-    const values = this.getNumericValues(allCells);
+    for (const cell of cells) {
+      const value = this.getCellValue(cell);
+      if (typeof value === 'number' && value < min) {
+        min = value;
+      }
+    }
     
-    if (values.length === 0) return "N/A";
-    return Math.min(...values);
+    return min === Number.POSITIVE_INFINITY ? 0 : min;
   }
 
-  private count(args: string[]): number {
-    if (args.length === 0) return 0;
-    
-    const allCells = args.flatMap(arg => this.getCellsFromRange(arg));
-    return this.getNumericValues(allCells).length;
+  private countRange(range: string): number {
+    const cells = this.parseRange(range);
+    return cells.filter(cell => {
+      const value = this.getCellValue(cell);
+      return typeof value === 'number';
+    }).length;
   }
 
   // Data Quality Functions
-  private trim(args: string[]): string {
-    if (args.length === 0) return "";
-    
-    const cellRef = args[0];
-    const value = String(this.getCellValue(cellRef));
-    return value.trim();
+  private trimCell(cellRef: string): string {
+    const value = this.getCellValue(cellRef);
+    return typeof value === 'string' ? value.trim() : value.toString();
   }
 
-  private upper(args: string[]): string {
-    if (args.length === 0) return "";
-    
-    const cellRef = args[0];
-    const value = String(this.getCellValue(cellRef));
-    return value.toUpperCase();
+  private upperCell(cellRef: string): string {
+    const value = this.getCellValue(cellRef);
+    return typeof value === 'string' ? value.toUpperCase() : value.toString().toUpperCase();
   }
 
-  private lower(args: string[]): string {
-    if (args.length === 0) return "";
-    
-    const cellRef = args[0];
-    const value = String(this.getCellValue(cellRef));
-    return value.toLowerCase();
+  private lowerCell(cellRef: string): string {
+    const value = this.getCellValue(cellRef);
+    return typeof value === 'string' ? value.toLowerCase() : value.toString().toLowerCase();
   }
 
-  private removeDuplicates(args: string[]): string {
-    if (args.length === 0) return "No range specified";
+  private findAndReplace(cellRef: string, find: string, replace: string): string {
+    const value = this.getCellValue(cellRef);
+    if (typeof value !== 'string') return value.toString();
     
-    const range = args[0];
-    if (!range.includes(':')) return "Invalid range";
-    
-    return `REMOVE_DUPLICATES function called on range ${range}. Please check for duplicate rows found.`;
+    return value.replace(new RegExp(find, 'g'), replace);
   }
 
-  private findAndReplace(args: string[]): string {
-    if (args.length < 3) return "Not enough arguments";
+  private removeDuplicates(range: string): string {
+    // The actual removal will be handled in Home.tsx
+    // Here we just identify if there are duplicates
+    const cells = this.parseRange(range);
     
-    const cellRef = args[0];
-    const searchText = this.extractStringArg(args[1]);
-    const replaceText = this.extractStringArg(args[2]);
+    // Get the unique rows in the range
+    const rows = new Set<number>();
+    cells.forEach(cell => {
+      const row = parseInt(cell.match(/\d+/)![0], 10);
+      rows.add(row);
+    });
     
-    const value = String(this.getCellValue(cellRef));
-    return value.replace(new RegExp(searchText, 'g'), replaceText);
-  }
-
-  private extractStringArg(arg: string): string {
-    // Handle quoted strings
-    const match = arg.match(/^"(.*)"$/);
-    return match ? match[1] : arg;
+    return `${rows.size} rows analyzed for duplicates`;
   }
 }

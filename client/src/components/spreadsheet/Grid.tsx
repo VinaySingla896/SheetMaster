@@ -23,7 +23,7 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
     format: {}
   });
 
-  const cellStyle = "w-[100px] h-[25px] box-border";
+  const cellStyle = "w-[150px] h-[25px] box-border";
   const headerStyle = "border border-gray-300 bg-gray-100 p-1 text-center " + cellStyle;
 
   return (

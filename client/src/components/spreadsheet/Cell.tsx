@@ -86,7 +86,7 @@ export function Cell({ data, isSelected, cellRef, highlightText, onSelect, onCha
     <div
       ref={cellElement}
       className={cn(
-        "border border-gray-300 p-1 overflow-hidden select-none",
+        "border border-gray-300 p-1 overflow-hidden select-none auto-resize-cell", // Added auto-resize-cell class
         isSelected && "bg-blue-100 outline outline-2 outline-blue-500 z-10",
         isInDragSelection && !isSelected && "bg-blue-50",
         data.format?.bold && "font-bold",
@@ -94,7 +94,7 @@ export function Cell({ data, isSelected, cellRef, highlightText, onSelect, onCha
       )}
       style={{ 
         boxSizing: 'border-box', 
-        width: '150px',
+        width: 'auto', 
         height: '25px',
         color: data.format?.color, 
         fontSize: data.format?.fontSize ? `${data.format.fontSize}px` : undefined,

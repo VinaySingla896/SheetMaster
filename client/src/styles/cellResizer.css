@@ -1,0 +1,28 @@
+
+.auto-resize-cell {
+  width: auto !important;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 8px;
+}
+
+.cell-container {
+  display: table;
+  table-layout: auto;
+  width: 100%;
+}
+
+.cell-content {
+  padding: 2px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+th.header-cell, td.data-cell {
+  min-width: 60px;
+  max-width: 300px;
+  width: auto;
+}

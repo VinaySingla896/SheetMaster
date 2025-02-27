@@ -8,6 +8,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { DragProvider } from "@/context/DragContext";
+import "@/styles/cellResizer.css";
 
 const INITIAL_SHEET: SheetData = {
   cells: {},

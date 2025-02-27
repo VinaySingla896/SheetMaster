@@ -24,13 +24,12 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
     format: {}
   });
 
-  const baseWidth = "w-[150px]";
   const baseHeight = "h-[25px]";
-  const cellStyle = `${baseWidth} ${baseHeight} box-border`;
-  const headerStyle = `border border-gray-300 bg-gray-100 p-1 text-center box-border ${baseWidth} ${baseHeight}`;
+  const cellStyle = `box-border ${baseHeight}`;
+  const headerStyle = `border border-gray-300 bg-gray-100 p-1 text-center box-border ${baseHeight}`;
 
   const { dragState, endDrag } = useDrag();
-  
+
   const handleMouseUp = () => {
     if (dragState.isDragging && dragState.startCell && dragState.endCell) {
       processDragSelection(dragState.startCell, dragState.endCell, dragState.dragData);
@@ -44,16 +43,16 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
     const startRow = parseInt(startCellRef.substring(1)) - 1;
     const endCol = endCellRef.charCodeAt(0) - 65;
     const endRow = parseInt(endCellRef.substring(1)) - 1;
-    
+
     const minCol = Math.min(startCol, endCol);
     const maxCol = Math.max(startCol, endCol);
     const minRow = Math.min(startRow, endRow);
     const maxRow = Math.max(startRow, endRow);
-    
+
     // Detect if this is a fill operation or a copy operation
     const isFillOperation = startCellRef === dragState.startCell && 
       (maxCol - minCol > 0 || maxRow - minRow > 0);
-    
+
     if (isFillOperation) {
       // Copy the source cell to all cells in the range
       for (let row = minRow; row <= maxRow; row++) {
@@ -87,19 +86,27 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
           </div>
           {Array.from({ length: data.colCount }).map((_, col) => {
             const cellRef = getCellRef(row, col);
+            const cellData = data.cells[cellRef] || getEmptyCell();
+            const contentWidth = cellData.value ? String(cellData.value).length * 8 + 16 : 60; // Basic width calculation
+
             return (
-              <Cell
+              <div
                 key={cellRef}
-                cellRef={cellRef}
-                data={data.cells[cellRef] || getEmptyCell()}
-                isSelected={selectedCell === cellRef}
-                highlightText={highlightText}
-                onSelect={() => {
-                  setSelectedCell(cellRef);
-                  onCellSelect(cellRef);
-                }}
-                onChange={(value) => onCellChange(cellRef, value)}
-              />
+                className={`${cellStyle} min-w-[${contentWidth}px]`}
+                style={{minWidth: `${contentWidth}px`}}
+              >
+                <Cell
+                  cellRef={cellRef}
+                  data={cellData}
+                  isSelected={selectedCell === cellRef}
+                  highlightText={highlightText}
+                  onSelect={() => {
+                    setSelectedCell(cellRef);
+                    onCellSelect(cellRef);
+                  }}
+                  onChange={(value) => onCellChange(cellRef, value)}
+                />
+              </div>
             );
           })}
         </div>

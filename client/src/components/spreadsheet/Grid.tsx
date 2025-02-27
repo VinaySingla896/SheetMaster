@@ -5,11 +5,12 @@ import { CellData, SheetData } from "@shared/schema";
 
 interface GridProps {
   data: SheetData;
+  highlightText?: string;
   onCellSelect: (ref: string) => void;
   onCellChange: (ref: string, value: string) => void;
 }
 
-export function Grid({ data, onCellSelect, onCellChange }: GridProps) {
+export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridProps) {
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
 
   const getCellRef = (row: number, col: number): string => {
@@ -44,6 +45,7 @@ export function Grid({ data, onCellSelect, onCellChange }: GridProps) {
                 key={cellRef}
                 data={data.cells[cellRef] || getEmptyCell()}
                 isSelected={selectedCell === cellRef}
+                highlightText={highlightText}
                 onSelect={() => {
                   setSelectedCell(cellRef);
                   onCellSelect(cellRef);

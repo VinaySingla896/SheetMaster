@@ -6,6 +6,7 @@ import { FormulaEvaluator } from "@/lib/formulaEvaluator";
 import { SheetData, CellData } from "@shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 const INITIAL_SHEET: SheetData = {
   cells: {},
@@ -16,6 +17,8 @@ const INITIAL_SHEET: SheetData = {
 export default function Home() {
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
   const [sheetData, setSheetData] = useState<SheetData>(INITIAL_SHEET);
+  const [highlightText, setHighlightText] = useState<string>("");
+  const { toast } = useToast();
 
   const { data: sheet } = useQuery({
     queryKey: ["/api/sheets/1"],
@@ -70,15 +73,40 @@ export default function Home() {
   };
 
   const handleFindReplace = (find: string, replace: string) => {
-    if (!selectedCell) return;
+    if (!selectedCell) {
+      toast({
+        title: "No cell selected",
+        description: "Please select a cell first",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const newData = { ...sheetData };
     const cell = newData.cells[selectedCell];
-    if (!cell) return;
+    if (!cell?.value) {
+      toast({
+        title: "Empty cell",
+        description: "Selected cell is empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setHighlightText(find);
 
     const formula = `=FIND_AND_REPLACE(${selectedCell},"${find}","${replace}")`;
     const evaluator = new FormulaEvaluator(newData.cells);
     const newValue = evaluator.evaluateFormula(formula, [selectedCell]);
+
+    if (newValue === cell.value) {
+      toast({
+        title: "No matches found",
+        description: `Could not find "${find}" in the selected cell`,
+        variant: "destructive"
+      });
+      return;
+    }
 
     newData.cells[selectedCell] = {
       ...cell,
@@ -87,6 +115,14 @@ export default function Home() {
 
     setSheetData(newData);
     updateSheet.mutate(newData);
+
+    toast({
+      title: "Text replaced",
+      description: `Replaced "${find}" with "${replace}"`,
+    });
+
+    // Clear highlight after a short delay
+    setTimeout(() => setHighlightText(""), 2000);
   };
 
   return (
@@ -102,6 +138,7 @@ export default function Home() {
       <div className="flex-1 overflow-auto">
         <Grid
           data={sheetData}
+          highlightText={highlightText}
           onCellSelect={setSelectedCell}
           onCellChange={handleCellChange}
         />

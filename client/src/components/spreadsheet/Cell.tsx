@@ -1,15 +1,16 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { CellData } from "@shared/schema";
 
 interface CellProps {
   data: CellData;
   isSelected: boolean;
+  highlightText?: string;
   onSelect: () => void;
   onChange: (value: string) => void;
 }
 
-export function Cell({ data, isSelected, onSelect, onChange }: CellProps) {
+export function Cell({ data, isSelected, highlightText, onSelect, onChange }: CellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -28,6 +29,23 @@ export function Cell({ data, isSelected, onSelect, onChange }: CellProps) {
       onChange(inputRef.current?.value || "");
     }
   };
+
+  const displayContent = useMemo(() => {
+    if (!highlightText || !data.value) return <span>{data.value?.toString()}</span>;
+
+    const text = data.value.toString();
+    const parts = text.split(new RegExp(`(${highlightText})`, 'gi'));
+
+    return (
+      <span>
+        {parts.map((part, i) => 
+          part.toLowerCase() === highlightText?.toLowerCase() ? 
+            <span key={i} className="bg-yellow-200">{part}</span> : 
+            part
+        )}
+      </span>
+    );
+  }, [data.value, highlightText]);
 
   return (
     <div
@@ -53,7 +71,7 @@ export function Cell({ data, isSelected, onSelect, onChange }: CellProps) {
           onKeyDown={handleKeyDown}
         />
       ) : (
-        <span>{data.value?.toString()}</span>
+        displayContent
       )}
     </div>
   );

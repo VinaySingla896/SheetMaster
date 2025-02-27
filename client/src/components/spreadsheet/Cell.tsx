@@ -8,7 +8,7 @@ interface CellProps {
   isSelected: boolean;
   cellRef: string;
   highlightText?: string;
-  onSelect: () => void;
+  onSelect: (e?:React.MouseEvent) => void;
   onChange: (value: string) => void;
 }
 
@@ -40,7 +40,7 @@ export function Cell({ data, isSelected, cellRef, highlightText, onSelect, onCha
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isEditing) {
-      onSelect();
+      onSelect(e);
       startDrag(cellRef, {
         value: data.value,
         formula: data.formula,

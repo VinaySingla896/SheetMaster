@@ -55,21 +55,39 @@ export default function Home() {
       cell.formula = value;
       const evaluator = new FormulaEvaluator(newData.cells);
       cell.value = evaluator.evaluateFormula(value, [ref]);
-
-      // For REMOVE_DUPLICATES, we need to clear duplicate rows
-      if (value.startsWith("=REMOVE_DUPLICATES") && typeof cell.value === 'string' && cell.value.includes("duplicate rows found")) {
-        // Extract range from formula
-        const match = value.match(/=REMOVE_DUPLICATES\((.*)\)/);
-        if (match && match[1]) {
-          const range = match[1].trim();
-          handleRemoveDuplicates(range);
-        }
-      }
     }
 
     newData.cells[ref] = cell;
     setSheetData(newData);
     updateSheet.mutate(newData);
+  };
+
+  const handleApplyFormula = (cells: string[], formula: string) => {
+    if (cells.length === 0 || !formula) return;
+
+    const newData = { ...sheetData };
+    const evaluator = new FormulaEvaluator(newData.cells);
+
+    // Apply formula to each cell
+    cells.forEach(cellRef => {
+      const cell: CellData = { value: "", formula };
+      try {
+        cell.value = evaluator.evaluateFormula(formula, [cellRef]);
+      } catch (error) {
+        cell.value = `#ERROR: ${error instanceof Error ? error.message : String(error)}`;
+      }
+      newData.cells[cellRef] = cell;
+    });
+
+    setSheetData(newData);
+
+    // Save to server
+    updateSheet.mutate(newData);
+
+    toast({
+      title: "Formula Applied",
+      description: `Applied "${formula}" to ${cells.length} cell${cells.length > 1 ? 's' : ''}`,
+    });
   };
 
   // Function to handle removing duplicate rows
@@ -287,6 +305,7 @@ export default function Home() {
             highlightText={highlightText}
             onCellSelect={setSelectedCell}
             onCellChange={handleCellChange}
+            onApplyFormula={handleApplyFormula}
           />
         </div>
       </div>

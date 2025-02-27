@@ -1,26 +1,31 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bold, Italic, Type, Search, Calculator } from "lucide-react";
+import { Bold, Italic, Type, Search, Calculator, Function } from "lucide-react";
 import { FindReplaceDialog } from "./FindReplaceDialog";
 import { SheetData } from "@shared/schema";
 import { FormulaTestDialog } from "./FormulaTestDialog";
 
 interface ToolbarProps {
-  onFormatChange: (format: {
-    bold?: boolean;
-    italic?: boolean;
-    fontSize?: number;
-    color?: string;
-  }) => void;
+  onFormatChange?: (format: { type: string; value: any }) => void;
   onFindReplace?: (find: string, replace: string) => void;
   onFind?: (text: string) => void;
+  onApplyFormula?: (cells: string[], formula: string) => void;
+  selectedCells?: string[];
   sheetData: SheetData;
 }
 
-export function Toolbar({ onFormatChange, onFindReplace, onFind, sheetData }: ToolbarProps) {
+export function Toolbar({ 
+  onFormatChange, 
+  onFindReplace, 
+  onFind, 
+  onApplyFormula,
+  selectedCells = [],
+  sheetData 
+}: ToolbarProps) {
   const [showFindReplace, setShowFindReplace] = useState(false);
   const [isFormulaTestOpen, setIsFormulaTestOpen] = useState(false);
+  const [isFormulaApplyOpen, setIsFormulaApplyOpen] = useState(false);
 
   return (
     <>
@@ -67,6 +72,16 @@ export function Toolbar({ onFormatChange, onFindReplace, onFind, sheetData }: To
           onClick={() => setIsFormulaTestOpen(true)}
         >
           <Calculator className="h-4 w-4" />
+        </Button>
+
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setIsFormulaApplyOpen(true)}
+          disabled={selectedCells.length === 0}
+          title={selectedCells.length === 0 ? "Select cells first" : "Apply formula to selected cells"}
+        >
+          <Function className="h-4 w-4" />
         </Button>
       </div>
 

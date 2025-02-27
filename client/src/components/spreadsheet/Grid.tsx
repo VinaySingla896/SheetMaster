@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Cell } from "./Cell";
 import { FormulaEvaluator } from "@/lib/formulaEvaluator";
 import { CellData, SheetData } from "@shared/schema";
@@ -6,13 +6,25 @@ import { useDrag } from "@/context/DragContext";
 
 interface GridProps {
   data: SheetData;
+  onCellSelect?: (ref: string | null) => void;
+  onCellChange?: (ref: string, value: string) => void;
   highlightText?: string;
-  onCellSelect: (ref: string) => void;
-  onCellChange: (ref: string, value: string) => void;
+  onMultiSelect?: (cells: string[]) => void;
 }
 
-export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridProps) {
+export function Grid({ data, onCellSelect, onCellChange, highlightText, onMultiSelect }: GridProps) {
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
+  const [selectedCells, setSelectedCells] = useState<string[]>([]);
+  const [editMode, setEditMode] = useState(false);
+  const [isMultiSelecting, setIsMultiSelecting] = useState(false);
+  const { dragState, endDrag } = useDrag();
+
+  // Notify parent component of selected cells
+  useEffect(() => {
+    if (onMultiSelect) {
+      onMultiSelect(selectedCells);
+    }
+  }, [selectedCells, onMultiSelect]);
 
   const getCellRef = (row: number, col: number): string => {
     const colLetter = String.fromCharCode(65 + col);
@@ -27,22 +39,12 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
   const baseHeight = "h-[35px]";
   const cellStyle = `box-border ${baseHeight} flex items-center`;
   const headerStyle = `border border-gray-300 bg-gray-100 p-1 text-center box-border ${baseHeight} overflow-hidden`;
-  
+
   // Track column widths
   const [columnWidths, setColumnWidths] = useState<number[]>(
     Array(data.colCount).fill(80) // Default width
   );
-  
-  const { dragState, endDrag } = useDrag();
-  
-  // Function to update column width
-  const updateColumnWidth = (colIndex: number, width: number) => {
-    setColumnWidths(prev => {
-      const newWidths = [...prev];
-      newWidths[colIndex] = Math.max(width, 60); // Minimum width of 60px
-      return newWidths;
-    });
-  };
+
 
   const handleMouseUp = () => {
     if (dragState.isDragging && dragState.startCell && dragState.endCell) {
@@ -83,6 +85,83 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
     }
   };
 
+  const handleCellClick = (ref: string, event?: React.MouseEvent) => {
+    // Handle multi-selection with Ctrl key
+    if (event && (event.ctrlKey || event.metaKey)) {
+      setIsMultiSelecting(true);
+      setSelectedCells(prev => {
+        // Toggle cell selection
+        if (prev.includes(ref)) {
+          return prev.filter(cell => cell !== ref);
+        } else {
+          return [...prev, ref];
+        }
+      });
+    } else if (event && event.shiftKey && selectedCell) {
+      // Range selection with Shift key
+      setIsMultiSelecting(true);
+      const [selCol, selRow] = parseCellRef(selectedCell);
+      const [targetCol, targetRow] = parseCellRef(ref);
+
+      const startCol = Math.min(selCol, targetCol);
+      const endCol = Math.max(selCol, targetCol);
+      const startRow = Math.min(selRow, targetRow);
+      const endRow = Math.max(selRow, targetRow);
+
+      const rangeSelection: string[] = [];
+      for (let col = startCol; col <= endCol; col++) {
+        for (let row = startRow; row <= endRow; row++) {
+          rangeSelection.push(getCellRefFromIndices(col, row));
+        }
+      }
+      setSelectedCells(rangeSelection);
+    } else {
+      // Single cell selection
+      setIsMultiSelecting(false);
+      setSelectedCell(ref);
+      setSelectedCells([ref]);
+      if (onCellSelect) {
+        onCellSelect(ref);
+      }
+    }
+  };
+
+  // Helper functions for cell references
+  const parseCellRef = (ref: string): [number, number] => {
+    const colStr = ref.match(/[A-Z]+/)?.[0] || "A";
+    const rowStr = ref.match(/\d+/)?.[0] || "1";
+
+    // Convert column letters to index (A=0, B=1, etc.)
+    let colIndex = 0;
+    for (let i = 0; i < colStr.length; i++) {
+      colIndex = colIndex * 26 + colStr.charCodeAt(i) - 64;
+    }
+
+    return [colIndex, parseInt(rowStr)];
+  };
+
+  const getCellRefFromIndices = (colIndex: number, rowIndex: number): string => {
+    let colStr = "";
+    let tempCol = colIndex;
+
+    while (tempCol > 0) {
+      const remainder = (tempCol - 1) % 26;
+      colStr = String.fromCharCode(65 + remainder) + colStr;
+      tempCol = Math.floor((tempCol - 1) / 26);
+    }
+
+    if (colStr === "") colStr = "A";
+    return `${colStr}${rowIndex}`;
+  };
+
+  const updateColumnWidth = (colIndex: number, width: number) => {
+    setColumnWidths(prev => {
+      const newWidths = [...prev];
+      newWidths[colIndex] = Math.max(width, 60); // Minimum width of 60px
+      return newWidths;
+    });
+  };
+
   return (
     <div className="overflow-auto" onMouseUp={handleMouseUp}>
       <div className="flex">
@@ -105,9 +184,10 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
           {Array.from({ length: data.colCount }).map((_, col) => {
             const cellRef = getCellRef(row, col);
             const cellData = data.cells[cellRef] || getEmptyCell();
+            const cellValue = cellData.value;
             // Calculate content width but don't apply immediately - use column width
-            const contentWidth = cellData.value ? String(cellData.value).length * 8 + 16 : 60;
-            
+            const contentWidth = cellValue ? String(cellValue).length * 8 + 16 : 60;
+
             // Update column width if content is wider
             if (contentWidth > columnWidths[col]) {
               updateColumnWidth(col, contentWidth);
@@ -125,13 +205,11 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
                 <Cell
                   cellRef={cellRef}
                   data={cellData}
-                  isSelected={selectedCell === cellRef}
+                  isSelected={selectedCell === cellRef || selectedCells.includes(cellRef)}
+                  onSelect={(e) => handleCellClick(cellRef, e)}
+                  onChange={(value) => onCellChange && onCellChange(cellRef, value)}
                   highlightText={highlightText}
-                  onSelect={() => {
-                    setSelectedCell(cellRef);
-                    onCellSelect(cellRef);
-                  }}
-                  onChange={(value) => onCellChange(cellRef, value)}
+                  format={cellData?.format}
                 />
               </div>
             );

@@ -1,7 +1,7 @@
 
 import { CellData } from "@shared/schema";
 
-export class FormulaEvaluator {
+export export class FormulaEvaluator {
   private cells: Record<string, CellData>;
   private processingCells: string[] = [];
 

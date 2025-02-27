@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bold, Italic, Type, Search } from "lucide-react";
+import { Bold, Italic, Type, Search, Calculator } from "lucide-react";
 import { FindReplaceDialog } from "./FindReplaceDialog";
+import { SheetData } from "@shared/schema";
+import { FormulaTestDialog } from "./FormulaTestDialog";
 
 interface ToolbarProps {
   onFormatChange: (format: {
@@ -13,10 +15,12 @@ interface ToolbarProps {
   }) => void;
   onFindReplace?: (find: string, replace: string) => void;
   onFind?: (text: string) => void;
+  sheetData: SheetData;
 }
 
-export function Toolbar({ onFormatChange, onFindReplace, onFind }: ToolbarProps) {
+export function Toolbar({ onFormatChange, onFindReplace, onFind, sheetData }: ToolbarProps) {
   const [showFindReplace, setShowFindReplace] = useState(false);
+  const [isFormulaTestOpen, setIsFormulaTestOpen] = useState(false);
 
   return (
     <>
@@ -57,6 +61,13 @@ export function Toolbar({ onFormatChange, onFindReplace, onFind }: ToolbarProps)
         >
           <Search className="h-4 w-4" />
         </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsFormulaTestOpen(true)}
+        >
+          <Calculator className="h-4 w-4" />
+        </Button>
       </div>
 
       <FindReplaceDialog
@@ -64,6 +75,11 @@ export function Toolbar({ onFormatChange, onFindReplace, onFind }: ToolbarProps)
         onClose={() => setShowFindReplace(false)}
         onApply={(find, replace) => onFindReplace?.(find, replace)}
         onFind={(text) => onFind?.(text)}
+      />
+      <FormulaTestDialog
+        isOpen={isFormulaTestOpen}
+        onClose={() => setIsFormulaTestOpen(false)}
+        sheetData={sheetData}
       />
     </>
   );

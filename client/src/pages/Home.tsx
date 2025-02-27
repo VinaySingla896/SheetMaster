@@ -275,6 +275,7 @@ export default function Home() {
           onFormatChange={handleFormatChange}
           onFindReplace={handleFindReplace}
           onFind={handleFind}
+          sheetData={sheetData}
         />
         <FormulaBar
           value={selectedCell ? (sheetData.cells[selectedCell]?.formula || sheetData.cells[selectedCell]?.value?.toString() || "") : ""}

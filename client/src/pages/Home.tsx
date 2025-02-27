@@ -95,11 +95,8 @@ export default function Home() {
 
     setHighlightText(find);
 
-    const formula = `=FIND_AND_REPLACE(${selectedCell},"${find}","${replace}")`;
-    const evaluator = new FormulaEvaluator(newData.cells);
-    const newValue = evaluator.evaluateFormula(formula, [selectedCell]);
-
-    if (newValue === cell.value) {
+    const currentValue = String(cell.value);
+    if (!currentValue.match(new RegExp(find, 'gi'))) {
       toast({
         title: "No matches found",
         description: `Could not find "${find}" in the selected cell`,
@@ -108,6 +105,7 @@ export default function Home() {
       return;
     }
 
+    const newValue = currentValue.replace(new RegExp(find, 'gi'), replace);
     newData.cells[selectedCell] = {
       ...cell,
       value: newValue

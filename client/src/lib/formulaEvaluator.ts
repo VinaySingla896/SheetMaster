@@ -12,44 +12,52 @@ export class FormulaEvaluator {
   evaluateFormula(formula: string, cellRefs: string[]): CellValue {
     if (!formula.startsWith("=")) return formula;
 
-    const functionName = formula.substring(1).split("(")[0].toUpperCase();
-    const range = this.extractRange(formula);
-    const values = this.getCellValues(range);
+    const functionMatch = formula.match(/^=([A-Z_]+)\((.*)\)$/);
+    if (!functionMatch) return "#ERROR!";
 
-    switch (functionName) {
-      case "SUM":
-        return this.sum(values);
-      case "AVERAGE":
-        return this.average(values);
-      case "MAX":
-        return this.max(values);
-      case "MIN":
-        return this.min(values);
-      case "COUNT":
-        return this.count(values);
-      case "TRIM":
-        return this.trim(values[0]);
-      case "UPPER":
-        return this.upper(values[0]);
-      case "LOWER":
-        return this.lower(values[0]);
-      default:
-        return "#ERROR!";
+    const functionName = functionMatch[1];
+    const args = functionMatch[2].split(",").map(arg => arg.trim());
+
+    try {
+      switch (functionName) {
+        case "SUM":
+          return this.sum(this.getCellValues(args));
+        case "AVERAGE":
+          return this.average(this.getCellValues(args));
+        case "MAX":
+          return this.max(this.getCellValues(args));
+        case "MIN":
+          return this.min(this.getCellValues(args));
+        case "COUNT":
+          return this.count(this.getCellValues(args));
+        case "TRIM":
+          return this.trim(this.getCellValue(args[0]));
+        case "UPPER":
+          return this.upper(this.getCellValue(args[0]));
+        case "LOWER":
+          return this.lower(this.getCellValue(args[0]));
+        case "FIND_AND_REPLACE":
+          if (args.length !== 3) return "#ERROR!";
+          return this.findAndReplace(this.getCellValue(args[0]), args[1], args[2]);
+        default:
+          return "#ERROR!";
+      }
+    } catch (error) {
+      return "#ERROR!";
     }
   }
 
-  private extractRange(formula: string): string[] {
-    const match = formula.match(/\((.*?)\)/);
-    if (!match) return [];
-    return match[1].split(",").map(r => r.trim());
+  private getCellValue(ref: string): CellValue {
+    return this.cells[ref]?.value ?? null;
   }
 
   private getCellValues(refs: string[]): CellValue[] {
-    return refs.map(ref => this.cells[ref]?.value ?? null);
+    return refs.map(ref => this.getCellValue(ref));
   }
 
   private sum(values: CellValue[]): number {
-    return values.reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
+    const nums = values.filter((v): v is number => typeof v === 'number');
+    return nums.reduce((sum, val) => sum + val, 0);
   }
 
   private average(values: CellValue[]): number {
@@ -59,11 +67,13 @@ export class FormulaEvaluator {
 
   private max(values: CellValue[]): number {
     const nums = values.filter((v): v is number => typeof v === 'number');
+    if (!nums.length) return 0;
     return Math.max(...nums);
   }
 
   private min(values: CellValue[]): number {
     const nums = values.filter((v): v is number => typeof v === 'number');
+    if (!nums.length) return 0;
     return Math.min(...nums);
   }
 
@@ -72,14 +82,18 @@ export class FormulaEvaluator {
   }
 
   private trim(value: CellValue): string {
-    return String(value).trim();
+    return String(value ?? '').trim();
   }
 
   private upper(value: CellValue): string {
-    return String(value).toUpperCase();
+    return String(value ?? '').toUpperCase();
   }
 
   private lower(value: CellValue): string {
-    return String(value).toLowerCase();
+    return String(value ?? '').toLowerCase();
+  }
+
+  private findAndReplace(value: CellValue, find: string, replace: string): string {
+    return String(value ?? '').replace(new RegExp(find, 'g'), replace);
   }
 }

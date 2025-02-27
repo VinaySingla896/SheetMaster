@@ -7,6 +7,7 @@ import { SheetData, CellData } from "@shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { DragProvider } from "@/context/DragContext";
 
 const INITIAL_SHEET: SheetData = {
   cells: {},
@@ -164,24 +165,26 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen flex flex-col">
-      <Toolbar 
-        onFormatChange={handleFormatChange}
-        onFindReplace={handleFindReplace}
-        onFind={handleFind}
-      />
-      <FormulaBar
-        value={selectedCell ? (sheetData.cells[selectedCell]?.formula || sheetData.cells[selectedCell]?.value?.toString() || "") : ""}
-        onChange={(value) => selectedCell && handleCellChange(selectedCell, value)}
-      />
-      <div className="flex-1 overflow-auto">
-        <Grid
-          data={sheetData}
-          highlightText={highlightText}
-          onCellSelect={setSelectedCell}
-          onCellChange={handleCellChange}
+    <DragProvider>
+      <div className="h-screen flex flex-col">
+        <Toolbar 
+          onFormatChange={handleFormatChange}
+          onFindReplace={handleFindReplace}
+          onFind={handleFind}
         />
+        <FormulaBar
+          value={selectedCell ? (sheetData.cells[selectedCell]?.formula || sheetData.cells[selectedCell]?.value?.toString() || "") : ""}
+          onChange={(value) => selectedCell && handleCellChange(selectedCell, value)}
+        />
+        <div className="flex-1 overflow-auto">
+          <Grid
+            data={sheetData}
+            highlightText={highlightText}
+            onCellSelect={setSelectedCell}
+            onCellChange={handleCellChange}
+          />
+        </div>
       </div>
-    </div>
+    </DragProvider>
   );
 }

@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +31,19 @@ export function FormulaApplyDialog({
   const [activeTab, setActiveTab] = useState("math");
   const [formula, setFormula] = useState("");
   const [previewResult, setPreviewResult] = useState<string | number>("");
+  const [isSelectingCells, setIsSelectingCells] = useState(false);
+  const [tempFormula, setTempFormula] = useState("");
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Reset state when dialog opens/closes
+    if (!isOpen) {
+      setIsSelectingCells(false);
+      setFormula("");
+      setPreviewResult("");
+    }
+  }, [isOpen]);
 
   const handleApply = () => {
     if (formula && selectedCells.length > 0) {
@@ -41,15 +54,53 @@ export function FormulaApplyDialog({
 
   const applyFormula = (formulaTemplate: string) => {
     setFormula(formulaTemplate);
+    evaluatePreview(formulaTemplate);
+  };
+
+  const evaluatePreview = (formulaToEvaluate: string) => {
     // Preview the formula result on the first selected cell
     if (selectedCells.length > 0) {
       try {
         const evaluator = new FormulaEvaluator(sheetData.cells);
-        const testResult = evaluator.evaluateFormula(formulaTemplate);
+        const testResult = evaluator.evaluateFormula(formulaToEvaluate);
         setPreviewResult(testResult);
       } catch (error) {
         setPreviewResult(`Error: ${error instanceof Error ? error.message : String(error)}`);
       }
+    }
+  };
+
+  const startCellSelection = () => {
+    // Store current formula and cursor position
+    setTempFormula(formula);
+    if (inputRef.current) {
+      setCursorPosition(inputRef.current.selectionStart || formula.length);
+    }
+    setIsSelectingCells(true);
+  };
+
+  const insertCellReference = (cellRef: string) => {
+    if (isSelectingCells) {
+      // Insert the cell reference at cursor position
+      const newFormula = 
+        tempFormula.substring(0, cursorPosition) + 
+        cellRef + 
+        tempFormula.substring(cursorPosition);
+
+      setFormula(newFormula);
+      setIsSelectingCells(false);
+
+      // Evaluate the new formula
+      evaluatePreview(newFormula);
+
+      // Focus back on the input and set cursor position after the inserted cell reference
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.selectionStart = cursorPosition + cellRef.length;
+          inputRef.current.selectionEnd = cursorPosition + cellRef.length;
+        }
+      }, 0);
     }
   };
 
@@ -149,14 +200,30 @@ export function FormulaApplyDialog({
           </TabsContent>
         </Tabs>
 
-        <div className="space-y-2 mt-4">
-          <Label htmlFor="formula">Formula:</Label>
-          <Input
-            id="formula"
-            value={formula}
-            onChange={(e) => setFormula(e.target.value)}
-            placeholder="Enter a formula (e.g., =SUM(A1:A5))"
-          />
+        <div className="space-y-4 mt-2">
+          <Label>Formula:</Label>
+          <div className="flex gap-2">
+            <Input
+              ref={inputRef}
+              value={formula}
+              onChange={(e) => {
+                setFormula(e.target.value);
+                evaluatePreview(e.target.value);
+              }}
+              placeholder="Enter a formula (e.g., =SUM(A1:A5))"
+              className={isSelectingCells ? "border-blue-500 bg-blue-50" : ""}
+            />
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="icon"
+              onClick={startCellSelection}
+              title="Select a cell reference"
+              className={isSelectingCells ? "bg-blue-100 border-blue-500" : ""}
+            >
+              +
+            </Button>
+          </div>
 
           {previewResult && (
             <div className="text-sm mt-1">

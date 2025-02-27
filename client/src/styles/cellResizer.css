@@ -1,7 +1,6 @@
 
 .auto-resize-cell {
-  width: auto !important;
-  max-width: 300px;
+  width: 100% !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

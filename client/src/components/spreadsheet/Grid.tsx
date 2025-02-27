@@ -27,8 +27,22 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
   const baseHeight = "h-[25px]";
   const cellStyle = `box-border ${baseHeight}`;
   const headerStyle = `border border-gray-300 bg-gray-100 p-1 text-center box-border ${baseHeight}`;
-
+  
+  // Track column widths
+  const [columnWidths, setColumnWidths] = useState<number[]>(
+    Array(data.colCount).fill(80) // Default width
+  );
+  
   const { dragState, endDrag } = useDrag();
+  
+  // Function to update column width
+  const updateColumnWidth = (colIndex: number, width: number) => {
+    setColumnWidths(prev => {
+      const newWidths = [...prev];
+      newWidths[colIndex] = Math.max(width, 60); // Minimum width of 60px
+      return newWidths;
+    });
+  };
 
   const handleMouseUp = () => {
     if (dragState.isDragging && dragState.startCell && dragState.endCell) {
@@ -74,7 +88,11 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
       <div className="flex">
         <div className={headerStyle} /> {/* Corner spacer */}
         {Array.from({ length: data.colCount }).map((_, col) => (
-          <div key={col} className={headerStyle}>
+          <div 
+            key={col} 
+            className={headerStyle}
+            style={{ width: `${columnWidths[col]}px`, minWidth: `${columnWidths[col]}px` }}
+          >
             {String.fromCharCode(65 + col)}
           </div>
         ))}
@@ -87,13 +105,22 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
           {Array.from({ length: data.colCount }).map((_, col) => {
             const cellRef = getCellRef(row, col);
             const cellData = data.cells[cellRef] || getEmptyCell();
-            const contentWidth = cellData.value ? String(cellData.value).length * 8 + 16 : 60; // Basic width calculation
+            // Calculate content width but don't apply immediately - use column width
+            const contentWidth = cellData.value ? String(cellData.value).length * 8 + 16 : 60;
+            
+            // Update column width if content is wider
+            if (contentWidth > columnWidths[col]) {
+              updateColumnWidth(col, contentWidth);
+            }
 
             return (
               <div
                 key={cellRef}
-                className={`${cellStyle} min-w-[${contentWidth}px]`}
-                style={{minWidth: `${contentWidth}px`}}
+                className={`${cellStyle}`}
+                style={{
+                  width: `${columnWidths[col]}px`, 
+                  minWidth: `${columnWidths[col]}px`
+                }}
               >
                 <Cell
                   cellRef={cellRef}

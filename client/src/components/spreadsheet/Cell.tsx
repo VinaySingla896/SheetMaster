@@ -94,7 +94,7 @@ export function Cell({ data, isSelected, cellRef, highlightText, onSelect, onCha
       )}
       style={{ 
         boxSizing: 'border-box', 
-        width: 'auto', 
+        width: '100%', 
         height: '25px',
         color: data.format?.color, 
         fontSize: data.format?.fontSize ? `${data.format.fontSize}px` : undefined,

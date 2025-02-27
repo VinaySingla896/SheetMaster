@@ -26,7 +26,7 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
   return (
     <div className="overflow-auto">
       <div className="flex">
-        <div className="w-[50px] h-[25px]" /> {/* Corner spacer */}
+        <div className="w-[100px] h-[25px]" /> {/* Corner spacer - adjusted width */}
         {Array.from({ length: data.colCount }).map((_, col) => (
           <div key={col} className="border border-gray-300 bg-gray-100 p-1 w-[100px] h-[25px] text-center">
             {String.fromCharCode(65 + col)}
@@ -35,7 +35,7 @@ export function Grid({ data, highlightText, onCellSelect, onCellChange }: GridPr
       </div>
       {Array.from({ length: data.rowCount }).map((_, row) => (
         <div key={row} className="flex">
-          <div className="border border-gray-300 bg-gray-100 p-1 w-[50px] h-[25px] text-center">
+          <div className="border border-gray-300 bg-gray-100 p-1 w-[100px] h-[25px] text-center">
             {row + 1}
           </div>
           {Array.from({ length: data.colCount }).map((_, col) => {

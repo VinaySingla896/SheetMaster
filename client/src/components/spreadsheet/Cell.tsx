@@ -19,14 +19,18 @@ export function Cell({ data, isSelected, highlightText, onSelect, onChange }: Ce
     inputRef.current?.focus();
   };
 
-  const handleBlur = () => {
+  const saveChanges = () => {
     setIsEditing(false);
+    onChange(inputRef.current?.value || "");
+  };
+
+  const handleBlur = () => {
+    saveChanges();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      setIsEditing(false);
-      onChange(inputRef.current?.value || "");
+      saveChanges();
     }
   };
 

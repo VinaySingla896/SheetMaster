@@ -1,226 +1,199 @@
-import { CellData } from "@shared/schema";
+import { SheetData, CellData } from "@shared/schema";
 
 export class FormulaEvaluator {
-  private cells: Record<string, CellData>;
+  private sheetData: SheetData;
 
-  constructor(cells: Record<string, CellData>) {
-    this.cells = cells;
+  constructor(sheetData: SheetData) {
+    this.sheetData = sheetData;
   }
 
   evaluateFormula(formula: string): string | number {
-    if (!formula.startsWith('=')) {
+    if (!formula.startsWith("=")) {
       return formula;
     }
 
-    // Remove the equals sign
-    const expression = formula.substring(1);
+    const formulaContent = formula.substring(1);
 
-    try {
-      // Check for specific functions
-      if (expression.startsWith('SUM')) {
-        return this.calculateSum(expression);
-      } else if (expression.startsWith('AVERAGE')) {
-        return this.calculateAverage(expression);
-      } else if (expression.startsWith('MAX')) {
-        return this.calculateMax(expression);
-      } else if (expression.startsWith('MIN')) {
-        return this.calculateMin(expression);
-      } else if (expression.startsWith('COUNT')) {
-        return this.calculateCount(expression);
-      } else if (expression.startsWith('TRIM')) {
-        return this.trimText(expression);
-      } else if (expression.startsWith('UPPER')) {
-        return this.upperCase(expression);
-      } else if (expression.startsWith('LOWER')) {
-        return this.lowerCase(expression);
-      } else if (expression.startsWith('FIND_AND_REPLACE')) {
-        return this.findAndReplace(expression);
-      } else if (expression.startsWith('REMOVE_DUPLICATES')) {
-        return this.removeDuplicates(expression);
+    // SUM function
+    if (formulaContent.startsWith("SUM(") && formulaContent.endsWith(")")) {
+      const range = formulaContent.substring(4, formulaContent.length - 1);
+      return this.evaluateSum(range);
+    }
+
+    // AVERAGE function
+    if (formulaContent.startsWith("AVERAGE(") && formulaContent.endsWith(")")) {
+      const range = formulaContent.substring(8, formulaContent.length - 1);
+      return this.evaluateAverage(range);
+    }
+
+    // MAX function
+    if (formulaContent.startsWith("MAX(") && formulaContent.endsWith(")")) {
+      const range = formulaContent.substring(4, formulaContent.length - 1);
+      return this.evaluateMax(range);
+    }
+
+    // MIN function
+    if (formulaContent.startsWith("MIN(") && formulaContent.endsWith(")")) {
+      const range = formulaContent.substring(4, formulaContent.length - 1);
+      return this.evaluateMin(range);
+    }
+
+    // COUNT function
+    if (formulaContent.startsWith("COUNT(") && formulaContent.endsWith(")")) {
+      const range = formulaContent.substring(6, formulaContent.length - 1);
+      return this.evaluateCount(range);
+    }
+
+    return formula;
+  }
+
+  private evaluateSum(range: string): number {
+    const cells = this.getCellsFromRange(range);
+    let sum = 0;
+
+    for (const cellId of cells) {
+      const cellData = this.sheetData.cells[cellId];
+      if (cellData && typeof cellData.value === 'number') {
+        sum += cellData.value;
+      } else if (cellData && typeof cellData.value === 'string' && !isNaN(Number(cellData.value))) {
+        sum += Number(cellData.value);
+      }
+    }
+
+    return sum;
+  }
+
+  private evaluateAverage(range: string): number {
+    const cells = this.getCellsFromRange(range);
+    let sum = 0;
+    let count = 0;
+
+    for (const cellId of cells) {
+      const cellData = this.sheetData.cells[cellId];
+      if (cellData && typeof cellData.value === 'number') {
+        sum += cellData.value;
+        count++;
+      } else if (cellData && typeof cellData.value === 'string' && !isNaN(Number(cellData.value))) {
+        sum += Number(cellData.value);
+        count++;
+      }
+    }
+
+    return count === 0 ? 0 : sum / count;
+  }
+
+  private evaluateMax(range: string): number {
+    const cells = this.getCellsFromRange(range);
+    let max = Number.NEGATIVE_INFINITY;
+    let hasValue = false;
+
+    for (const cellId of cells) {
+      const cellData = this.sheetData.cells[cellId];
+      let value: number | undefined;
+
+      if (cellData && typeof cellData.value === 'number') {
+        value = cellData.value;
+      } else if (cellData && typeof cellData.value === 'string' && !isNaN(Number(cellData.value))) {
+        value = Number(cellData.value);
       }
 
-      // Default: try to evaluate as a mathematical expression
-      return this.evaluateExpression(expression);
-    } catch (error) {
-      return `Error: ${error instanceof Error ? error.message : String(error)}`;
+      if (value !== undefined) {
+        max = Math.max(max, value);
+        hasValue = true;
+      }
+    }
+
+    return hasValue ? max : 0;
+  }
+
+  private evaluateMin(range: string): number {
+    const cells = this.getCellsFromRange(range);
+    let min = Number.POSITIVE_INFINITY;
+    let hasValue = false;
+
+    for (const cellId of cells) {
+      const cellData = this.sheetData.cells[cellId];
+      let value: number | undefined;
+
+      if (cellData && typeof cellData.value === 'number') {
+        value = cellData.value;
+      } else if (cellData && typeof cellData.value === 'string' && !isNaN(Number(cellData.value))) {
+        value = Number(cellData.value);
+      }
+
+      if (value !== undefined) {
+        min = Math.min(min, value);
+        hasValue = true;
+      }
+    }
+
+    return hasValue ? min : 0;
+  }
+
+  private evaluateCount(range: string): number {
+    const cells = this.getCellsFromRange(range);
+    let count = 0;
+
+    for (const cellId of cells) {
+      const cellData = this.sheetData.cells[cellId];
+      if (cellData && cellData.value !== null && cellData.value !== "") {
+        count++;
+      }
+    }
+
+    return count;
+  }
+
+  private getCellsFromRange(range: string): string[] {
+    if (range.includes(':')) {
+      return this.expandCellRange(range);
+    } else {
+      return range.split(',').map(cell => cell.trim());
     }
   }
 
-  private calculateSum(expression: string): number {
-    const range = this.extractRange(expression);
-    const values = this.getCellValues(range);
-    return values.reduce((sum, value) => sum + (typeof value === 'number' ? value : 0), 0);
-  }
+  private expandCellRange(range: string): string[] {
+    const [start, end] = range.split(':').map(cell => cell.trim());
+    const startCol = this.getColumnIndex(start);
+    const startRow = this.getRowIndex(start);
+    const endCol = this.getColumnIndex(end);
+    const endRow = this.getRowIndex(end);
 
-  private calculateAverage(expression: string): number {
-    const range = this.extractRange(expression);
-    const values = this.getCellValues(range);
-    const numericValues = values.filter(value => typeof value === 'number');
+    const cells: string[] = [];
 
-    if (numericValues.length === 0) {
-      return 0;
-    }
-
-    const sum = numericValues.reduce((acc, value) => acc + value, 0);
-    return sum / numericValues.length;
-  }
-
-  private calculateMax(expression: string): number {
-    const range = this.extractRange(expression);
-    const values = this.getCellValues(range);
-    const numericValues = values.filter(value => typeof value === 'number');
-
-    if (numericValues.length === 0) {
-      return 0;
-    }
-
-    return Math.max(...numericValues);
-  }
-
-  private calculateMin(expression: string): number {
-    const range = this.extractRange(expression);
-    const values = this.getCellValues(range);
-    const numericValues = values.filter(value => typeof value === 'number');
-
-    if (numericValues.length === 0) {
-      return 0;
-    }
-
-    return Math.min(...numericValues);
-  }
-
-  private calculateCount(expression: string): number {
-    const range = this.extractRange(expression);
-    const values = this.getCellValues(range);
-    return values.filter(value => typeof value === 'number').length;
-  }
-
-  private trimText(expression: string): string {
-    const cellRef = this.extractSingleCellReference(expression);
-    const value = this.getCellValue(cellRef);
-    return typeof value === 'string' ? value.trim() : String(value).trim();
-  }
-
-  private upperCase(expression: string): string {
-    const cellRef = this.extractSingleCellReference(expression);
-    const value = this.getCellValue(cellRef);
-    return String(value).toUpperCase();
-  }
-
-  private lowerCase(expression: string): string {
-    const cellRef = this.extractSingleCellReference(expression);
-    const value = this.getCellValue(cellRef);
-    return String(value).toLowerCase();
-  }
-
-  private findAndReplace(expression: string): string {
-    // Simplified parsing of FIND_AND_REPLACE(A1,"old","new")
-    const match = expression.match(/FIND_AND_REPLACE\(([A-Z]+\d+),\s*"([^"]*)"\s*,\s*"([^"]*)"\)/);
-    if (!match) {
-      throw new Error("Invalid FIND_AND_REPLACE format");
-    }
-
-    const [, cellRef, findText, replaceText] = match;
-    const value = this.getCellValue(cellRef);
-    return String(value).replace(new RegExp(findText, 'g'), replaceText);
-  }
-
-  private removeDuplicates(expression: string): string {
-    const range = this.extractRange(expression);
-    // Just return a message - actual removal will be handled in the UI component
-    return `${this.countDuplicates(range)} duplicate rows found. Click to remove.`;
-  }
-
-  private countDuplicates(range: string): number {
-    // Placeholder implementation
-    return 2; // Mock value for demonstration
-  }
-
-  private evaluateExpression(expression: string): number {
-    // Replace cell references with their values
-    const cellRefPattern = /[A-Z]+\d+/g;
-    const sanitizedExpression = expression.replace(cellRefPattern, (match) => {
-      const value = this.getCellValue(match);
-      return typeof value === 'number' ? String(value) : '0';
-    });
-
-    // Use Function constructor to evaluate the expression
-    // eslint-disable-next-line no-new-func
-    return Function(`"use strict"; return (${sanitizedExpression})`)();
-  }
-
-  private extractRange(expression: string): string {
-    const match = expression.match(/\(([A-Z]+\d+:[A-Z]+\d+)\)/);
-    if (!match) {
-      throw new Error("Invalid range format");
-    }
-    return match[1];
-  }
-
-  private extractSingleCellReference(expression: string): string {
-    const match = expression.match(/\(([A-Z]+\d+)\)/);
-    if (!match) {
-      throw new Error("Invalid cell reference format");
-    }
-    return match[1];
-  }
-
-  private getCellValues(range: string): (string | number)[] {
-    const [start, end] = range.split(':');
-    const values: (string | number)[] = [];
-
-    // Extract column and row from cell references
-    const startCol = start.match(/^[A-Z]+/)?.[0] || '';
-    const startRow = parseInt(start.match(/\d+/)?.[0] || '0');
-    const endCol = end.match(/^[A-Z]+/)?.[0] || '';
-    const endRow = parseInt(end.match(/\d+/)?.[0] || '0');
-
-    // Convert column letters to indices
-    const startColIndex = this.columnToIndex(startCol);
-    const endColIndex = this.columnToIndex(endCol);
-
-    // Collect values
     for (let row = startRow; row <= endRow; row++) {
-      for (let colIndex = startColIndex; colIndex <= endColIndex; colIndex++) {
-        const colLetter = this.indexToColumn(colIndex);
-        const cellRef = `${colLetter}${row}`;
-        const value = this.getCellValue(cellRef);
-        values.push(value);
+      for (let col = startCol; col <= endCol; col++) {
+        cells.push(`${this.columnIndexToLetter(col)}${row}`);
       }
     }
 
-    return values;
+    return cells;
   }
 
-  private getCellValue(cellRef: string): string | number {
-    const cell = this.cells[cellRef];
-    if (!cell) {
-      return 0;
+  private getColumnIndex(cellId: string): number {
+    const colLetters = cellId.match(/[A-Z]+/)?.[0] || '';
+    let colIndex = 0;
+
+    for (let i = 0; i < colLetters.length; i++) {
+      colIndex = colIndex * 26 + (colLetters.charCodeAt(i) - 64);
     }
 
-    // If the cell contains a formula, evaluate it recursively
-    if (typeof cell.value === 'string' && cell.value.startsWith('=')) {
-      return this.evaluateFormula(cell.value);
-    }
-
-    return cell.value;
+    return colIndex;
   }
 
-  private columnToIndex(col: string): number {
-    let index = 0;
-    for (let i = 0; i < col.length; i++) {
-      index = index * 26 + (col.charCodeAt(i) - 64);
-    }
-    return index;
+  private getRowIndex(cellId: string): number {
+    return parseInt(cellId.match(/\d+/)?.[0] || '1', 10);
   }
 
-  private indexToColumn(index: number): string {
-    let column = '';
+  private columnIndexToLetter(index: number): string {
+    let letters = '';
+
     while (index > 0) {
       const remainder = (index - 1) % 26;
-      column = String.fromCharCode(65 + remainder) + column;
+      letters = String.fromCharCode(65 + remainder) + letters;
       index = Math.floor((index - 1) / 26);
     }
-    return column;
+
+    return letters;
   }
 }

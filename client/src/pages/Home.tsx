@@ -18,8 +18,9 @@ const INITIAL_SHEET: SheetData = {
 
 export default function Home() {
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
-  const [sheetData, setSheetData] = useState<SheetData>(INITIAL_SHEET);
   const [highlightText, setHighlightText] = useState<string>("");
+  const [isFormulaSelectionMode, setIsFormulaSelectionMode] = useState(false);
+  const [pendingFormulaRange, setPendingFormulaRange] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: sheet } = useQuery({
@@ -286,6 +287,9 @@ export default function Home() {
     setTimeout(() => setHighlightText(""), 5000);
   };
 
+  const [sheetData, setSheetData] = useState<SheetData>(INITIAL_SHEET);
+
+
   return (
     <DragProvider>
       <div className="h-screen flex flex-col">
@@ -294,10 +298,17 @@ export default function Home() {
           onFindReplace={handleFindReplace}
           onFind={handleFind}
           sheetData={sheetData}
+          onRemoveDuplicates={handleRemoveDuplicates}
+          setIsFormulaSelectionMode={setIsFormulaSelectionMode}
+          pendingFormulaRange={pendingFormulaRange}
+          setPendingFormulaRange={setPendingFormulaRange}
         />
         <FormulaBar
           value={selectedCell ? (sheetData.cells[selectedCell]?.formula || sheetData.cells[selectedCell]?.value?.toString() || "") : ""}
           onChange={(value) => selectedCell && handleCellChange(selectedCell, value)}
+          isFormulaSelectionMode={isFormulaSelectionMode}
+          pendingFormulaRange={pendingFormulaRange}
+          setPendingFormulaRange={setPendingFormulaRange}
         />
         <div className="flex-1 overflow-auto">
           <Grid
@@ -306,6 +317,9 @@ export default function Home() {
             onCellSelect={setSelectedCell}
             onCellChange={handleCellChange}
             onApplyFormula={handleApplyFormula}
+            isFormulaSelectionMode={isFormulaSelectionMode}
+            pendingFormulaRange={pendingFormulaRange}
+            setPendingFormulaRange={setPendingFormulaRange}
           />
         </div>
       </div>

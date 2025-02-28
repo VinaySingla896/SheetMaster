@@ -3,21 +3,36 @@ import { Cell } from "./Cell";
 import { FormulaEvaluator } from "@/lib/formulaEvaluator";
 import { CellData, SheetData } from "@shared/schema";
 import { useDrag } from "@/context/DragContext";
+import { useToast } from "@/context/ToastContext";
 
 interface GridProps {
   data: SheetData;
-  onCellSelect?: (ref: string | null) => void;
-  onCellChange?: (ref: string, value: string) => void;
+  onCellSelect?: (cellId: string) => void;
+  onCellChange?: (cellId: string, value: string) => void;
+  onApplyFormula?: (cellIds: string[], formula: string) => void;
+  isFormulaSelectionMode?: boolean;
+  onFormulaRangeSelected?: (range: string) => void;
   highlightText?: string;
   onMultiSelect?: (cells: string[]) => void;
 }
 
-export function Grid({ data, onCellSelect, onCellChange, highlightText, onMultiSelect }: GridProps) {
+export function Grid({ 
+  data, 
+  onCellSelect, 
+  onCellChange, 
+  onApplyFormula, 
+  isFormulaSelectionMode = false,
+  onFormulaRangeSelected,
+  highlightText,
+  onMultiSelect
+}: GridProps) {
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
   const [selectedCells, setSelectedCells] = useState<string[]>([]);
   const [editMode, setEditMode] = useState(false);
   const [isMultiSelecting, setIsMultiSelecting] = useState(false);
+  const [formulaSelectionStart, setFormulaSelectionStart] = useState<string | null>(null);
   const { dragState, endDrag } = useDrag();
+  const { toast } = useToast();
 
   // Notify parent component of selected cells
   useEffect(() => {
@@ -86,6 +101,27 @@ export function Grid({ data, onCellSelect, onCellChange, highlightText, onMultiS
   };
 
   const handleCellClick = (ref: string, event?: React.MouseEvent) => {
+    // Handle formula selection
+    if (isFormulaSelectionMode) {
+      if (!formulaSelectionStart) {
+        setFormulaSelectionStart(ref);
+        toast({
+          title: "Starting cell selected",
+          description: "Now select an ending cell or click the same cell to select just one cell",
+        });
+      } else {
+        // Create a range like A1:B2 or just A1 if same cell
+        const range = formulaSelectionStart === ref ? ref : `${formulaSelectionStart}:${ref}`;
+        onFormulaRangeSelected?.(range);
+        setFormulaSelectionStart(null);
+        toast({
+          title: "Cell range selected",
+          description: `Range ${range} has been selected`,
+        });
+      }
+      return;
+    }
+
     // Handle multi-selection with Ctrl key
     if (event && (event.ctrlKey || event.metaKey)) {
       setIsMultiSelecting(true);

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -13,18 +13,33 @@ interface FormulaTestDialogProps {
   isOpen: boolean;
   onClose: () => void;
   sheetData: SheetData;
+  initialCellRange?: string;
+  onSelectCells?: () => void;
 }
 
 export function FormulaTestDialog({
   isOpen,
   onClose,
   sheetData,
+  initialCellRange = "",
+  onSelectCells,
 }: FormulaTestDialogProps) {
   const [activeTab, setActiveTab] = useState("math");
   const [formula, setFormula] = useState("");
   const [result, setResult] = useState<string | number>("");
-  const [cellRange, setCellRange] = useState("");
+  const [cellRange, setCellRange] = useState(initialCellRange);
   const { toast } = useToast();
+  
+  // Reset formula and result when dialog opens, and set initialCellRange if provided
+  useEffect(() => {
+    if (isOpen) {
+      setFormula("");
+      setResult("");
+      if (initialCellRange) {
+        setCellRange(initialCellRange);
+      }
+    }
+  }, [isOpen, initialCellRange]);
 
   const handleTest = () => {
     try {
@@ -115,22 +130,34 @@ export function FormulaTestDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[400px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Test Formula Functions</DialogTitle>
         </DialogHeader>
 
         <div className="mb-4">
           <Label htmlFor="cell-range">Cell Range:</Label>
-          <Input 
-            id="cell-range"
-            value={cellRange}
-            onChange={(e) => setCellRange(e.target.value)}
-            placeholder="e.g., A1:A5 or A1,B1,C1"
-            className="mt-1"
-          />
+          <div className="flex items-center gap-2">
+            <Input 
+              id="cell-range"
+              value={cellRange}
+              onChange={(e) => setCellRange(e.target.value)}
+              placeholder="e.g., A1:A5 or A1,B1,C1"
+              className="mt-1"
+            />
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="mt-1"
+              onClick={() => {
+                onSelectCells?.(); // This will trigger selection mode in the parent
+              }}
+            >
+              Select
+            </Button>
+          </div>
           <p className="text-xs text-gray-500 mt-1">
-            Enter a range (A1:A5) or individual cells (A1,B1,C1)
+            Enter a range or click 'Select' to choose cells visually
           </p>
         </div>
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Bold, Italic, Type, Search, Calculator, FunctionSquare } from "lucide-react";
@@ -7,25 +7,44 @@ import { SheetData } from "@shared/schema";
 import { FormulaTestDialog } from "./FormulaTestDialog";
 
 interface ToolbarProps {
-  onFormatChange?: (format: { type: string; value: any }) => void;
+  onFormatChange?: (format: { [key: string]: any }) => void;
   onFindReplace?: (find: string, replace: string) => void;
   onFind?: (text: string) => void;
-  onApplyFormula?: (cells: string[], formula: string) => void;
-  selectedCells?: string[];
   sheetData: SheetData;
+  enableFormulaSelectionMode?: () => void;
 }
 
 export function Toolbar({ 
   onFormatChange, 
   onFindReplace, 
   onFind, 
-  onApplyFormula,
-  selectedCells = [],
-  sheetData 
+  sheetData,
+  enableFormulaSelectionMode
 }: ToolbarProps) {
-  const [showFindReplace, setShowFindReplace] = useState(false);
+  const [selectedCells, setSelectedCells] = useState<string[]>([]);
   const [isFormulaTestOpen, setIsFormulaTestOpen] = useState(false);
   const [isFormulaApplyOpen, setIsFormulaApplyOpen] = useState(false);
+  const [showFindReplace, setShowFindReplace] = useState(false);
+  const [selectedFormulaRange, setSelectedFormulaRange] = useState("");
+
+  useEffect(() => {
+    const handleSelectionChange = (e: CustomEvent) => {
+      setSelectedCells(e.detail.selectedCells || []);
+    };
+
+    const handleFormulaRangeSelected = (e: CustomEvent) => {
+      setSelectedFormulaRange(e.detail.range);
+      setIsFormulaTestOpen(true);
+    };
+
+    document.addEventListener('cell-selection-changed', handleSelectionChange as EventListener);
+    document.addEventListener('formula-range-selected', handleFormulaRangeSelected as EventListener);
+
+    return () => {
+      document.removeEventListener('cell-selection-changed', handleSelectionChange as EventListener);
+      document.removeEventListener('formula-range-selected', handleFormulaRangeSelected as EventListener);
+    };
+  }, []);
 
   return (
     <>
@@ -95,6 +114,7 @@ export function Toolbar({
         isOpen={isFormulaTestOpen}
         onClose={() => setIsFormulaTestOpen(false)}
         sheetData={sheetData}
+        selectedFormulaRange={selectedFormulaRange}
       />
     </>
   );

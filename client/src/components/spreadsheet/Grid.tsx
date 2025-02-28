@@ -3,7 +3,7 @@ import { Cell } from "./Cell";
 import { FormulaEvaluator } from "@/lib/formulaEvaluator";
 import { CellData, SheetData } from "@shared/schema";
 import { useDrag } from "@/context/DragContext";
-import { useToast } from "@/context/ToastContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface GridProps {
   data: SheetData;

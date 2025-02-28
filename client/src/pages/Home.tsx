@@ -8,7 +8,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { DragProvider } from "@/context/DragContext";
-import { FormulaApplyDialog } from "@/components/spreadsheet/FormulaApplyDialog";
 import "@/styles/cellResizer.css";
 
 const INITIAL_SHEET: SheetData = {
@@ -21,9 +20,6 @@ export default function Home() {
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
   const [sheetData, setSheetData] = useState<SheetData>(INITIAL_SHEET);
   const [highlightText, setHighlightText] = useState<string>("");
-  const [selectedCells, setSelectedCells] = useState<string[]>([]);
-  const [isFormulaDialogOpen, setIsFormulaDialogOpen] = useState(false);
-  const [isFormulaSelectMode, setIsFormulaSelectMode] = useState(false);
   const { toast } = useToast();
 
   const { data: sheet } = useQuery({
@@ -64,15 +60,6 @@ export default function Home() {
     newData.cells[ref] = cell;
     setSheetData(newData);
     updateSheet.mutate(newData);
-  };
-
-  const handleCellSelectionForFormula = (cellRef: string) => {
-    if (isFormulaSelectMode) {
-      // End formula selection mode
-      setIsFormulaSelectMode(false);
-      // Send the selected cell reference back to the FormulaApplyDialog
-      // This is handled via a ref/state in the dialog
-    }
   };
 
   const handleApplyFormula = (cells: string[], formula: string) => {
@@ -307,8 +294,6 @@ export default function Home() {
           onFindReplace={handleFindReplace}
           onFind={handleFind}
           sheetData={sheetData}
-          selectedCells={selectedCells}
-          onOpenFormulaDialog={() => setIsFormulaDialogOpen(true)}
         />
         <FormulaBar
           value={selectedCell ? (sheetData.cells[selectedCell]?.formula || sheetData.cells[selectedCell]?.value?.toString() || "") : ""}
@@ -321,18 +306,8 @@ export default function Home() {
             onCellSelect={setSelectedCell}
             onCellChange={handleCellChange}
             onApplyFormula={handleApplyFormula}
-            isFormulaSelectMode={isFormulaSelectMode}
-            onFormulaSelectCell={handleCellSelectionForFormula}
           />
         </div>
-        
-        <FormulaApplyDialog
-          isOpen={isFormulaDialogOpen}
-          onClose={() => setIsFormulaDialogOpen(false)}
-          selectedCells={selectedCells.length > 0 ? selectedCells : selectedCell ? [selectedCell] : []}
-          onApplyFormula={handleApplyFormula}
-          sheetData={sheetData}
-        />
       </div>
     </DragProvider>
   );

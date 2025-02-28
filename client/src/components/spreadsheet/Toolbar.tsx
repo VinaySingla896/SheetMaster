@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Bold, Italic, Type, Search, Calculator, FunctionSquare } from "lucide-react";
 import { FindReplaceDialog } from "./FindReplaceDialog";
 import { SheetData } from "@shared/schema";
-import { FormulaApplyDialog } from "./FormulaApplyDialog"; // Added import
+import { FormulaTestDialog } from "./FormulaTestDialog";
 
 interface ToolbarProps {
   onFormatChange?: (format: { type: string; value: any }) => void;
@@ -77,7 +77,7 @@ export function Toolbar({
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={() => setIsFormulaApplyOpen(true)} // Opens the dialog
+          onClick={() => setIsFormulaApplyOpen(true)}
           disabled={selectedCells.length === 0}
           title={selectedCells.length === 0 ? "Select cells first" : "Apply formula to selected cells"}
         >
@@ -95,11 +95,6 @@ export function Toolbar({
         isOpen={isFormulaTestOpen}
         onClose={() => setIsFormulaTestOpen(false)}
         sheetData={sheetData}
-      />
-      <FormulaApplyDialog // Added FormulaApplyDialog
-        isOpen={isFormulaApplyOpen}
-        onClose={() => setIsFormulaApplyOpen(false)}
-        onApplyFormula={onApplyFormula}
       />
     </>
   );

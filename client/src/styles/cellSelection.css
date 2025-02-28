@@ -30,13 +30,3 @@
   font-size: 0.85rem;
   z-index: 1000;
 }
-
-/* Formula selection mode styling */
-.formula-selection-mode {
-  cursor: crosshair;
-}
-
-.formula-selection-mode .cell:hover {
-  background-color: rgba(59, 130, 246, 0.15);
-  outline: 2px dashed #3b82f6;
-}

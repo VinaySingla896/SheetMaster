@@ -25,9 +25,43 @@ interface ToolbarProps {
 
 function FileMenu({ onNewFile, onLoadFile, sheetData }: { onNewFile: () => void; onLoadFile: (data: SheetData) => void; sheetData: SheetData }) {
   const handleSave = () => {
-    const csvData = Object.values(sheetData.cells).map(cell => cell.value).join(',');
-    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8" });
+    // Create CSV content
+    const { cells, rowCount, colCount } = sheetData;
+    
+    // Find the maximum row and column with data
+    let maxRow = 0;
+    let maxCol = 0;
+    
+    for (const cellId in cells) {
+      const [col, row] = cellId.split(',').map(Number);
+      maxRow = Math.max(maxRow, row);
+      maxCol = Math.max(maxCol, col);
+    }
+    
+    // Ensure we export at least 10 rows and columns
+    maxRow = Math.max(maxRow, 10);
+    maxCol = Math.max(maxCol, 10);
+    
+    // Generate CSV rows
+    let csvContent = '';
+    for (let row = 0; row <= maxRow; row++) {
+      const csvRow = [];
+      for (let col = 0; col <= maxCol; col++) {
+        const cellId = `${col},${row}`;
+        const cellValue = cells[cellId]?.value || '';
+        csvRow.push(cellValue);
+      }
+      csvContent += csvRow.join(',') + '\n';
+    }
+    
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
     saveAs(blob, "spreadsheet.csv");
+  };
+
+  const handleNewFile = () => {
+    if (onNewFile) {
+      onNewFile();
+    }
   };
 
   const handleLoad = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,16 +70,29 @@ function FileMenu({ onNewFile, onLoadFile, sheetData }: { onNewFile: () => void;
       const reader = new FileReader();
       reader.onload = (e) => {
         const csvString = e.target?.result as string;
-        const lines = csvString.split('\n');
-        const newSheetData: SheetData = { cells: {} };
+        const lines = csvString.split('\n').filter(line => line.trim());
+        
+        const newSheetData: SheetData = { 
+          cells: {},
+          rowCount: lines.length,
+          colCount: 0
+        };
+        
         lines.forEach((line, rowIndex) => {
           const values = line.split(',');
+          newSheetData.colCount = Math.max(newSheetData.colCount, values.length);
+          
           values.forEach((value, colIndex) => {
-            const cellId = `${rowIndex},${colIndex}`;
-            newSheetData.cells[cellId] = { value, format: {} }; //Simple format
-          })
-        })
-        onLoadFile(newSheetData);
+            if (value.trim()) {
+              const cellId = `${colIndex},${rowIndex}`;
+              newSheetData.cells[cellId] = { value: value.trim(), format: {} };
+            }
+          });
+        });
+        
+        if (onLoadFile) {
+          onLoadFile(newSheetData);
+        }
       };
       reader.readAsText(file);
     }
@@ -53,11 +100,11 @@ function FileMenu({ onNewFile, onLoadFile, sheetData }: { onNewFile: () => void;
 
   return (
     <div className="flex items-center gap-2">
-      <Button onClick={onNewFile}>New File</Button>
+      <Button onClick={handleNewFile}>New File</Button>
       <Button onClick={handleSave}>Save File</Button>
       <input type="file" accept=".csv" onChange={handleLoad} style={{ display: 'none' }} id="fileInput" />
       <label htmlFor="fileInput">
-        <Button>Load File</Button>
+        <Button as="span">Load File</Button>
       </label>
     </div>
   );

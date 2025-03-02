@@ -69,7 +69,7 @@ export class FormulaEvaluator {
     let count = 0;
 
     for (const cellId of cells) {
-      const cellData = this.sheetData.cells[cellId];
+      const cellData = this.sheetData[cellId];
       if (cellData && typeof cellData.value === 'number') {
         sum += cellData.value;
         count++;
@@ -88,7 +88,7 @@ export class FormulaEvaluator {
     let hasValue = false;
 
     for (const cellId of cells) {
-      const cellData = this.sheetData.cells[cellId];
+      const cellData = this.sheetData[cellId];
       let value: number | undefined;
 
       if (cellData && typeof cellData.value === 'number') {
@@ -112,7 +112,7 @@ export class FormulaEvaluator {
     let hasValue = false;
 
     for (const cellId of cells) {
-      const cellData = this.sheetData.cells[cellId];
+      const cellData = this.sheetData[cellId];
       let value: number | undefined;
 
       if (cellData && typeof cellData.value === 'number') {
@@ -135,7 +135,7 @@ export class FormulaEvaluator {
     let count = 0;
 
     for (const cellId of cells) {
-      const cellData = this.sheetData.cells[cellId];
+      const cellData = this.sheetData[cellId];
       if (cellData && cellData.value !== null && cellData.value !== "") {
         count++;
       }

@@ -177,16 +177,8 @@ export class FormulaEvaluator {
     // We'll take the first cell from the range for CLEAN
     if (cells.length === 0) return "";
     
-    const cellId = cells[0];
-    const cellData = this.sheetData[cellId];
-    
-    if (!cellData || cellData.value === null || cellData.value === undefined) {
-      return "";
-    }
-    
-    const value = String(cellData.value);
-    // Remove non-printable characters (control characters, etc.)
-    return value.replace(/[^\x20-\x7E]/g, "");
+    // For CLEAN, we return an empty string as it's meant to clear the cell content
+    return "";
   }
 
   private getCellsFromRange(range: string): string[] {

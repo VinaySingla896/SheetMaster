@@ -93,7 +93,7 @@ export function FormulaTestDialog({
             if (formula.match(/^\s*=\s*TRIM/i)) {
               newValue = newValue.trim();
             } else if (formula.match(/^\s*=\s*CLEAN/i)) {
-              newValue = newValue.replace(/[^\x20-\x7E]/g, "");
+              newValue = ""; // Clear the cell content
             }
 
             // Update the cell with the cleaned/trimmed value
@@ -150,7 +150,7 @@ export function FormulaTestDialog({
                 if (formula.match(/^\s*=\s*TRIM/i)) {
                   newValue = newValue.trim();
                 } else if (formula.match(/^\s*=\s*CLEAN/i)) {
-                  newValue = newValue.replace(/[^\x20-\x7E]/g, "");
+                  newValue = ""; // Clear the cell content
                 }
 
                 // Update the cell with the cleaned/trimmed value
@@ -165,7 +165,7 @@ export function FormulaTestDialog({
             if (formula.match(/^\s*=\s*TRIM/i)) {
               resultValue = resultValue.trim();
             } else if (formula.match(/^\s*=\s*CLEAN/i)) {
-              resultValue = resultValue.replace(/[^\x20-\x7E]/g, "");
+              resultValue = ""; // Clear the cell content for display
             }
             setResult(resultValue);
           }
@@ -322,7 +322,7 @@ export function FormulaTestDialog({
               <p>Data quality functions:</p>
               <ul className="list-disc list-inside">
                 <li>TRIM - Removes extra spaces</li>
-                <li>CLEAN - Removes non-printable characters</li>
+                <li>CLEAN - Clears cell content (makes the cell blank)</li>
               </ul>
             </div>
           </TabsContent>

@@ -28,9 +28,9 @@ A web-based spreadsheet application built with React, TypeScript, and Express.
 
 1. Clone the repository
 2. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
 ### Development
 

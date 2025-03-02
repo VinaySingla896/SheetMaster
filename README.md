@@ -17,7 +17,6 @@ A web-based spreadsheet application built with React, TypeScript, and Express.
 
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS, Shadcn UI
 - **Backend**: Express.js, Node.js
-- **Authentication**: Passport.js (not currently implemented)
 
 ## Getting Started
 

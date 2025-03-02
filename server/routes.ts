@@ -14,6 +14,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(sheet);
   });
 
+  // Initialize sheet with ID 1 if it doesn't exist
+  app.post("/api/sheets/init", async (req, res) => {
+    // Check if sheet 1 exists
+    const existingSheet = await storage.getSheet(1);
+    
+    if (!existingSheet) {
+      // Create default sheet with ID 1
+      const initialSheet = {
+        name: "New Sheet",
+        data: {
+          cells: {},
+          rowCount: 100,
+          colCount: 26
+        }
+      };
+      
+      const sheet = await storage.createSheet(initialSheet);
+      res.json(sheet);
+    } else {
+      res.json(existingSheet);
+    }
+  });
+
   app.get("/api/sheets/:id", async (req, res) => {
     const id = parseInt(req.params.id);
     const sheet = await storage.getSheet(id);

@@ -301,6 +301,36 @@ export default function Home() {
     updateSheet.mutate(newData);
   };
 
+  const handleNewFile = () => {
+    setSheetData(INITIAL_SHEET);
+  };
+
+  const handleLoadFile = async (file: File) => {
+    // Placeholder for loading CSV
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const csvData = e.target?.result as string;
+      //  Implement CSV parsing and data loading here.  This is a complex task
+      //  and needs a dedicated CSV parsing library to handle various formats
+      //  and potential errors. For example, Papa Parse would be a good option.
+      console.log("CSV data:", csvData);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleSaveFile = () => {
+    // Placeholder for saving to CSV. This requires converting the sheetData to CSV format
+    const csvContent = "data:text/csv;charset=utf-8," +  // Placeholder CSV data - replace with actual CSV generation
+      Object.entries(sheetData.cells).map(([key, val]) => `${key},${val.value}`).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "spreadsheet.csv");
+    document.body.appendChild(link);
+    link.click();
+  };
+
+
 
   return (
     <DragProvider>
@@ -315,6 +345,9 @@ export default function Home() {
           pendingFormulaRange={pendingFormulaRange}
           setPendingFormulaRange={setPendingFormulaRange}
           onCellChange={handleCellChange}
+          onNewFile={handleNewFile}
+          onSaveFile={handleSaveFile}
+          onLoadFile={handleLoadFile}
         />
         <FormulaBar
           value={selectedCell ? (sheetData.cells[selectedCell]?.formula || sheetData.cells[selectedCell]?.value?.toString() || "") : ""}

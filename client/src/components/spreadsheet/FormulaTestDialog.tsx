@@ -133,19 +133,42 @@ export function FormulaTestDialog({
             });
             return;
           }
-        }
+          const formulaWithRange = formulaPrefix + `(${cellRange})`;
+          const evaluator = new FormulaEvaluator(sheetData.cells);
+          const testResult = evaluator.evaluateFormula(formulaWithRange);
+          setResult(testResult);
+        } else if (isDataQualityFunction) {
+          // For TRIM and CLEAN, we apply the function to all cells in the range
+          const cells = parseCellRange(cellRange);
+          if (cells.length > 0) {
+            cells.forEach(cellId => {
+              const cellData = sheetData.cells[cellId];
+              if (cellData && cellData.value !== undefined) {
+                let newValue = cellData.value.toString();
 
-        const formulaWithRange = formulaPrefix + `(${cellRange})`;
-        const evaluator = new FormulaEvaluator(sheetData.cells);
-        const testResult = evaluator.evaluateFormula(formulaWithRange);
-        setResult(testResult);
+                // Apply the data quality function
+                if (formula.match(/^\s*=\s*TRIM/i)) {
+                  newValue = newValue.trim();
+                } else if (formula.match(/^\s*=\s*CLEAN/i)) {
+                  newValue = newValue.replace(/[^\x20-\x7E]/g, "");
+                }
 
-        // For data quality functions, also show that you need to click Test Formula to apply changes
-        if (isDataQualityFunction) {
-          toast({
-            title: "Click Test Formula to Apply",
-            description: `Click the Test Formula button to apply the ${isDataQualityFunction[1]} function to all cells in the range.`,
-          });
+                // Update the cell with the cleaned/trimmed value
+                onCellChange(cellId, newValue);
+              }
+            });
+
+            // Show the result from the first cell for display purposes
+            const firstCellId = cells[0];
+            const firstCellData = sheetData.cells[firstCellId];
+            let resultValue = firstCellData?.value?.toString() || "";
+            if (formula.match(/^\s*=\s*TRIM/i)) {
+              resultValue = resultValue.trim();
+            } else if (formula.match(/^\s*=\s*CLEAN/i)) {
+              resultValue = resultValue.replace(/[^\x20-\x7E]/g, "");
+            }
+            setResult(resultValue);
+          }
         }
       } catch (error) {
         setResult(`Error: ${error instanceof Error ? error.message : String(error)}`);

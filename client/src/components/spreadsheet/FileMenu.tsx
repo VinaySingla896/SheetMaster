@@ -152,7 +152,8 @@ export function FileMenu({ onNewFile, onLoadFile, sheetData }: FileMenuProps) {
               value = value.replace(/^"(.*)"$/, '$1');
 
               if (value.trim()) {
-                const cellId = `${String.fromCharCode(65 + colIndex)}:${rowIndex + 1}`;
+                // Fix cell reference format (A1 instead of A:1)
+                const cellId = `${String.fromCharCode(65 + colIndex)}${rowIndex + 1}`;
                 newCells[cellId] = { value };
               }
             });
@@ -162,9 +163,17 @@ export function FileMenu({ onNewFile, onLoadFile, sheetData }: FileMenuProps) {
           const newSheetData: SheetData = {
             cells: newCells,
             rowCount: Math.max(100, Object.keys(newCells).length > 0 ? 
-              Math.max(...Object.keys(newCells).map(key => parseInt(key.split(':')[1]))) : 0),
+              Math.max(...Object.keys(newCells).map(key => {
+                // Extract row number from cell ID (A1 format)
+                const rowMatch = key.match(/[0-9]+/);
+                return rowMatch ? parseInt(rowMatch[0]) : 0;
+              })) : 0),
             colCount: Math.max(26, Object.keys(newCells).length > 0 ? 
-              Math.max(...Object.keys(newCells).map(key => key.split(':')[0].charCodeAt(0) - 64)) : 0)
+              Math.max(...Object.keys(newCells).map(key => {
+                // Extract column letter from cell ID (A1 format)
+                const colMatch = key.match(/[A-Z]+/);
+                return colMatch ? colMatch[0].charCodeAt(0) - 64 : 0;
+              })) : 0)
           };
 
           onLoadFile(newSheetData);

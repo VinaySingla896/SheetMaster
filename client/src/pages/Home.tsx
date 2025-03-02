@@ -302,7 +302,12 @@ export default function Home() {
   };
 
   const handleNewFile = () => {
+    console.log("New file action - clearing sheet data");
     setSheetData({...INITIAL_SHEET, cells: {}}); //Added cells:{} to clear existing data
+    toast({
+      title: "New File",
+      description: "Created a new empty spreadsheet"
+    });
   };
 
   const handleLoadFile = (file: File | null) => {
@@ -319,10 +324,20 @@ export default function Home() {
           // Placeholder for CSV parsing - Replace with a proper CSV parsing library
           const parsedData = parseCSV(csvData); 
           if(parsedData){
+            console.log("Loaded CSV data:", parsedData);
             const newData = {...INITIAL_SHEET, cells: parsedData}
             setSheetData(newData);
+            toast({
+              title: "File Loaded",
+              description: `Successfully imported data with ${Object.keys(parsedData).length} cells`
+            });
           } else {
             console.error("Failed to parse CSV data");
+            toast({
+              title: "Import Failed",
+              description: "Could not parse the CSV data",
+              variant: "destructive"
+            });
           }
         } else {
           console.error("Failed to read file data");
@@ -341,19 +356,64 @@ export default function Home() {
 
 
   const parseCSV = (csvData: string): {[key: string]: CellData} | null => {
-    //This is a placeholder.  Use a library like Papa Parse for robust CSV parsing.
-    const lines = csvData.split('\n');
-    const cells: {[key:string]: CellData} = {};
-    if(lines.length > 0){
-      lines.forEach(line => {
-        const [key, value] = line.split(',');
-        if(key && value){
-          cells[key] = {value};
-        }
-      })
+    try {
+      const lines = csvData.split('\n').filter(line => line.trim());
+      const cells: {[key: string]: CellData} = {};
+      
+      if (lines.length === 0) return null;
+      
+      lines.forEach((line, rowIndex) => {
+        // Parse CSV properly handling quoted values
+        const getCellValues = (line: string): string[] => {
+          const values: string[] = [];
+          let inQuotes = false;
+          let currentValue = "";
+          
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              if (inQuotes && line[i + 1] === '"') {
+                // Handle escaped quotes
+                currentValue += '"';
+                i++;
+              } else {
+                // Toggle quote mode
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              // End of value
+              values.push(currentValue);
+              currentValue = "";
+            } else {
+              currentValue += char;
+            }
+          }
+          
+          // Add the last value
+          values.push(currentValue);
+          return values;
+        };
+        
+        const rowValues = getCellValues(line);
+        
+        rowValues.forEach((value, colIndex) => {
+          // Remove surrounding quotes if any
+          value = value.replace(/^"(.*)"$/, '$1');
+          
+          if (value.trim()) {
+            // Use correct cell reference format (A1 instead of A:1)
+            const cellId = `${String.fromCharCode(65 + colIndex)}${rowIndex + 1}`;
+            cells[cellId] = { value };
+          }
+        });
+      });
+      
+      console.log("Parsed CSV data:", cells);
       return cells;
+    } catch (error) {
+      console.error("Error parsing CSV:", error);
+      return null;
     }
-    return null;
   };
 
   const handleSaveFile = () => {

@@ -12,6 +12,7 @@ interface FormulaTestDialogProps {
   isOpen: boolean;
   onClose: () => void;
   sheetData: SheetData;
+  onCellChange: (cellId: string, newValue: string) => void; // Added onCellChange prop
   initialCellRange?: string;
 }
 
@@ -19,6 +20,7 @@ export function FormulaTestDialog({
   isOpen,
   onClose,
   sheetData,
+  onCellChange, // Using onCellChange prop
   initialCellRange = "",
 }: FormulaTestDialogProps) {
   const [activeTab, setActiveTab] = useState("math");
@@ -42,21 +44,16 @@ export function FormulaTestDialog({
     try {
       if (!cellRange) {
         toast({
-          title: "Error",
-          description: "Please enter a cell range",
+          title: "No cell range specified",
+          description: "Please enter a valid cell range (e.g., A1:A5 or A1,B1,C1)",
           variant: "destructive",
         });
         return;
       }
 
-      // Parse cell range
-      const cells = parseCellRange(cellRange);
-
-      // Only validate numbers for mathematical functions, not data quality functions
-      const isMathFunction = formula.match(/^\s*=\s*(SUM|AVERAGE|MAX|MIN|COUNT)/i);
-
-      if (isMathFunction) {
-        // Check if cells are valid and contain numbers
+      // For mathematical functions, validate that cells contain numbers
+      if (formula.match(/^\s*=\s*(SUM|AVERAGE|MAX|MIN|COUNT)/i)) {
+        const cells = parseCellRange(cellRange);
         const invalidCells = validateCellsContainNumbers(cells, sheetData);
 
         if (invalidCells.length > 0) {
@@ -82,6 +79,33 @@ export function FormulaTestDialog({
       const evaluator = new FormulaEvaluator(sheetData.cells);
       const testResult = evaluator.evaluateFormula(formulaWithRange);
       setResult(testResult);
+
+      // For data quality functions (TRIM and CLEAN), update the cell values directly
+      if (formula.match(/^\s*=\s*(TRIM|CLEAN)/i)) {
+        const cells = parseCellRange(cellRange);
+
+        // Apply the transformation to each cell
+        cells.forEach((cellId) => {
+          const cellData = sheetData.cells[cellId];
+          if (cellData && cellData.value !== undefined && cellData.value !== null) {
+            let newValue = String(cellData.value);
+
+            if (formula.match(/^\s*=\s*TRIM/i)) {
+              newValue = newValue.trim();
+            } else if (formula.match(/^\s*=\s*CLEAN/i)) {
+              newValue = newValue.replace(/[^\x20-\x7E]/g, "");
+            }
+
+            // Update the cell with the cleaned/trimmed value
+            onCellChange(cellId, newValue);
+          }
+        });
+
+        toast({
+          title: "Success",
+          description: `Applied ${formula.match(/TRIM/i) ? 'TRIM' : 'CLEAN'} function to ${cells.length} cell(s)`,
+        });
+      }
     } catch (error) {
       setResult(`Error: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -95,6 +119,7 @@ export function FormulaTestDialog({
       try {
         // Only validate numbers for mathematical functions, not data quality functions
         const isMathFunction = formulaPrefix.match(/^\s*=\s*(SUM|AVERAGE|MAX|MIN|COUNT)/i);
+        const isDataQualityFunction = formulaPrefix.match(/^\s*=\s*(TRIM|CLEAN)/i);
 
         if (isMathFunction) {
           const cells = parseCellRange(cellRange);
@@ -114,6 +139,14 @@ export function FormulaTestDialog({
         const evaluator = new FormulaEvaluator(sheetData.cells);
         const testResult = evaluator.evaluateFormula(formulaWithRange);
         setResult(testResult);
+
+        // For data quality functions, also show that you need to click Test Formula to apply changes
+        if (isDataQualityFunction) {
+          toast({
+            title: "Click Test Formula to Apply",
+            description: `Click the Test Formula button to apply the ${isDataQualityFunction[1]} function to all cells in the range.`,
+          });
+        }
       } catch (error) {
         setResult(`Error: ${error instanceof Error ? error.message : String(error)}`);
       }

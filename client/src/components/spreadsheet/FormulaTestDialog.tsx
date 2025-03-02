@@ -52,16 +52,21 @@ export function FormulaTestDialog({
       // Parse cell range
       const cells = parseCellRange(cellRange);
 
-      // Check if cells are valid and contain numbers
-      const invalidCells = validateCellsContainNumbers(cells, sheetData);
+      // Only validate numbers for mathematical functions
+      const isMathFunction = formula.match(/^\s*=\s*(SUM|AVERAGE|MAX|MIN|COUNT)/i);
+      
+      if (isMathFunction) {
+        // Check if cells are valid and contain numbers
+        const invalidCells = validateCellsContainNumbers(cells, sheetData);
 
-      if (invalidCells.length > 0) {
-        toast({
-          title: "Invalid Cells",
-          description: `Cells ${invalidCells.join(', ')} do not contain valid numbers. Formula can only be applied on numbers.`,
-          variant: "destructive",
-        });
-        return;
+        if (invalidCells.length > 0) {
+          toast({
+            title: "Invalid Cells",
+            description: `Cells ${invalidCells.join(', ')} do not contain valid numbers. Formula can only be applied on numbers.`,
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       // Create formula with the actual cell range
@@ -88,6 +93,23 @@ export function FormulaTestDialog({
     // If we have a cell range, let's evaluate this formula right away
     if (cellRange) {
       try {
+        // Only validate numbers for mathematical functions
+        const isMathFunction = formulaPrefix.match(/^\s*=\s*(SUM|AVERAGE|MAX|MIN|COUNT)/i);
+        
+        if (isMathFunction) {
+          const cells = parseCellRange(cellRange);
+          const invalidCells = validateCellsContainNumbers(cells, sheetData);
+          
+          if (invalidCells.length > 0) {
+            toast({
+              title: "Invalid Cells",
+              description: `Cells ${invalidCells.join(', ')} do not contain valid numbers. Formula can only be applied on numbers.`,
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+        
         const formulaWithRange = formulaPrefix + `(${cellRange})`;
         const evaluator = new FormulaEvaluator(sheetData.cells);
         const testResult = evaluator.evaluateFormula(formulaWithRange);

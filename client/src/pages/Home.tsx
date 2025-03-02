@@ -289,11 +289,18 @@ export default function Home() {
 
   const [sheetData, setSheetData] = useState<SheetData>(INITIAL_SHEET);
 
+  const setCellValue = (cellId: string, newValue: string) => {
+    const newData = { ...sheetData };
+    newData.cells[cellId] = { value: newValue }; //Simplified cell update
+    setSheetData(newData);
+    updateSheet.mutate(newData);
+  };
+
 
   return (
     <DragProvider>
       <div className="h-screen flex flex-col">
-        <Toolbar 
+        <Toolbar
           onFormatChange={handleFormatChange}
           onFindReplace={handleFindReplace}
           onFind={handleFind}
@@ -302,6 +309,7 @@ export default function Home() {
           setIsFormulaSelectionMode={setIsFormulaSelectionMode}
           pendingFormulaRange={pendingFormulaRange}
           setPendingFormulaRange={setPendingFormulaRange}
+          onCellChange={handleCellChange}
         />
         <FormulaBar
           value={selectedCell ? (sheetData.cells[selectedCell]?.formula || sheetData.cells[selectedCell]?.value?.toString() || "") : ""}

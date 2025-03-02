@@ -12,6 +12,7 @@ interface ToolbarProps {
   onFind?: (text: string) => void;
   sheetData: SheetData;
   enableFormulaSelectionMode?: () => void;
+  onCellChange?: (cellId: string, newValue: string) => void; // Added onCellChange prop
 }
 
 export function Toolbar({ 
@@ -19,7 +20,8 @@ export function Toolbar({
   onFindReplace, 
   onFind, 
   sheetData,
-  enableFormulaSelectionMode
+  enableFormulaSelectionMode,
+  onCellChange // Added onCellChange prop
 }: ToolbarProps) {
   const [selectedCells, setSelectedCells] = useState<string[]>([]);
   const [isFormulaTestOpen, setIsFormulaTestOpen] = useState(false);
@@ -115,6 +117,7 @@ export function Toolbar({
         onClose={() => setIsFormulaTestOpen(false)}
         sheetData={sheetData}
         initialCellRange={selectedFormulaRange}
+        onCellChange={onCellChange} // Pass onCellChange prop
       />
     </>
   );

@@ -305,17 +305,35 @@ export default function Home() {
     setSheetData(INITIAL_SHEET);
   };
 
-  const handleLoadFile = async (file: File) => {
-    // Placeholder for loading CSV
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const csvData = e.target?.result as string;
-      //  Implement CSV parsing and data loading here.  This is a complex task
-      //  and needs a dedicated CSV parsing library to handle various formats
-      //  and potential errors. For example, Papa Parse would be a good option.
-      console.log("CSV data:", csvData);
-    };
-    reader.readAsText(file);
+  const handleLoadFile = (file: File | null) => {
+    if (!file) {
+      console.log("No file provided to handleLoadFile");
+      return;
+    }
+
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target && e.target.result) {
+          const csvData = e.target.result as string;
+          console.log("CSV data:", csvData);
+          //  Implement CSV parsing and data loading here.  This is a complex task
+          //  and needs a dedicated CSV parsing library to handle various formats
+          //  and potential errors. For example, Papa Parse would be a good option.
+
+        } else {
+          console.error("Failed to read file data");
+        }
+      };
+
+      reader.onerror = () => {
+        console.error("Error reading file in handleLoadFile");
+      };
+
+      reader.readAsText(file);
+    } catch (error) {
+      console.error("Error in handleLoadFile:", error);
+    }
   };
 
   const handleSaveFile = () => {

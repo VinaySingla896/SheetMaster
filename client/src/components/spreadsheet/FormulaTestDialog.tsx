@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,7 +26,7 @@ export function FormulaTestDialog({
   const [result, setResult] = useState<string | number>("");
   const [cellRange, setCellRange] = useState(initialCellRange);
   const { toast } = useToast();
-  
+
   // Reset formula and result when dialog opens, and set initialCellRange if provided
   useEffect(() => {
     if (isOpen) {
@@ -49,13 +48,13 @@ export function FormulaTestDialog({
         });
         return;
       }
-      
+
       // Parse cell range
       const cells = parseCellRange(cellRange);
-      
+
       // Check if cells are valid and contain numbers
       const invalidCells = validateCellsContainNumbers(cells, sheetData);
-      
+
       if (invalidCells.length > 0) {
         toast({
           title: "Invalid Cells",
@@ -64,7 +63,7 @@ export function FormulaTestDialog({
         });
         return;
       }
-      
+
       // Create formula with the actual cell range
       let formulaWithRange = formula;
       if (formula.includes("()")) {
@@ -74,7 +73,7 @@ export function FormulaTestDialog({
       } else if (!formula.match(/\([^)]+\)/)) {
         formulaWithRange = formula.replace(/\(/, `(${cellRange}`);
       }
-      
+
       const evaluator = new FormulaEvaluator(sheetData.cells);
       const testResult = evaluator.evaluateFormula(formulaWithRange);
       setResult(testResult);
@@ -83,10 +82,22 @@ export function FormulaTestDialog({
     }
   };
 
-  const applyFormula = (formulaTemplate: string) => {
-    setFormula(formulaTemplate);
+  const applyFormula = (formulaPrefix: string) => {
+    setFormula(formulaPrefix + "()");
+
+    // If we have a cell range, let's evaluate this formula right away
+    if (cellRange) {
+      try {
+        const formulaWithRange = formulaPrefix + `(${cellRange})`;
+        const evaluator = new FormulaEvaluator(sheetData.cells);
+        const testResult = evaluator.evaluateFormula(formulaWithRange);
+        setResult(testResult);
+      } catch (error) {
+        setResult(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
   };
-  
+
   // Parse cell range like "A1:A5" or "A1,B1,C1"
   const parseCellRange = (range: string): string[] => {
     if (range.includes(':')) {
@@ -96,9 +107,9 @@ export function FormulaTestDialog({
       const startRow = parseInt(start.match(/\d+/)?.[0] || '1');
       const endCol = end.match(/[A-Z]+/)?.[0] || startCol;
       const endRow = parseInt(end.match(/\d+/)?.[0] || startRow.toString());
-      
+
       const cells: string[] = [];
-      
+
       // Handle single column range (e.g., A1:A5)
       if (startCol === endCol) {
         for (let row = startRow; row <= endRow; row++) {
@@ -111,23 +122,23 @@ export function FormulaTestDialog({
           cells.push(`${String.fromCharCode(col)}${startRow}`);
         }
       }
-      
+
       return cells;
     } else {
       // Handle comma-separated cells like A1,B1,C1
       return range.split(',').map(cell => cell.trim());
     }
   };
-  
+
   // Validate that all cells contain numeric values
   const validateCellsContainNumbers = (cells: string[], sheetData: SheetData): string[] => {
     return cells.filter(cell => {
       const cellData = sheetData.cells[cell];
       if (!cellData) return true; // Empty cell is invalid
-      
+
       const value = cellData.value;
       if (value === undefined || value === null) return true;
-      
+
       // Check if value is a number or can be converted to a number
       return isNaN(Number(value));
     });
@@ -217,14 +228,14 @@ export function FormulaTestDialog({
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => applyFormula("=TRIM()")}
+                onClick={() => applyFormula("=TRIM")}
               >
                 TRIM
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => applyFormula("=CLEAN()")}
+                onClick={() => applyFormula("=CLEAN")}
               >
                 CLEAN
               </Button>

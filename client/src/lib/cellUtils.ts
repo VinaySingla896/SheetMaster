@@ -1,22 +1,15 @@
+import { SheetData } from "@shared/schema";
 
-// Utility functions for working with cell ranges
-
-/**
- * Parse a cell range string like "A1:B5" and return an array of individual cell IDs
- */
 export function parseCellRange(range: string): string[] {
   if (range.includes(':')) {
-    return expandCellRange(range);
+    const [start, end] = range.split(':').map(cell => cell.trim());
+    return expandCellRange(start, end);
   } else {
     return range.split(',').map(cell => cell.trim());
   }
 }
 
-/**
- * Expand a cell range like "A1:B5" to individual cell IDs
- */
-export function expandCellRange(range: string): string[] {
-  const [start, end] = range.split(':').map(cell => cell.trim());
+function expandCellRange(start: string, end: string): string[] {
   const startCol = getColumnIndex(start);
   const startRow = getRowIndex(start);
   const endCol = getColumnIndex(end);
@@ -33,10 +26,7 @@ export function expandCellRange(range: string): string[] {
   return cells;
 }
 
-/**
- * Get column index from cell ID (e.g., "A" from "A1" returns 1)
- */
-export function getColumnIndex(cellId: string): number {
+function getColumnIndex(cellId: string): number {
   const colLetters = cellId.match(/[A-Z]+/)?.[0] || '';
   let colIndex = 0;
 
@@ -47,17 +37,11 @@ export function getColumnIndex(cellId: string): number {
   return colIndex;
 }
 
-/**
- * Get row index from cell ID (e.g., "1" from "A1" returns 1)
- */
-export function getRowIndex(cellId: string): number {
+function getRowIndex(cellId: string): number {
   return parseInt(cellId.match(/\d+/)?.[0] || '1', 10);
 }
 
-/**
- * Convert column index to letter (e.g., 1 -> "A", 27 -> "AA")
- */
-export function columnIndexToLetter(index: number): string {
+function columnIndexToLetter(index: number): string {
   let letters = '';
 
   while (index > 0) {
@@ -69,21 +53,45 @@ export function columnIndexToLetter(index: number): string {
   return letters;
 }
 
-/**
- * Validate that all cells in a range contain numeric values
- */
-export function validateCellsContainNumbers(cells: string[], sheetData: any): string[] {
+export function getCellValues(cells: string[], sheetData: SheetData): (number | null)[] {
+  return cells.map(cellId => {
+    const cellData = sheetData.cells[cellId];
+    if (!cellData || cellData.value === undefined || cellData.value === null || cellData.value === '') {
+      return null;
+    }
+
+    if (typeof cellData.value === 'number') {
+      return cellData.value;
+    }
+
+    if (typeof cellData.value === 'string' && !isNaN(Number(cellData.value))) {
+      return Number(cellData.value);
+    }
+
+    return null;
+  });
+}
+
+export function validateCellsContainNumbers(cells: string[], sheetData: SheetData): string[] {
   const invalidCells: string[] = [];
-  
+
   for (const cellId of cells) {
     const cellData = sheetData.cells[cellId];
-    
-    if (!cellData || 
-        (typeof cellData.value !== 'number' && 
-         (typeof cellData.value !== 'string' || isNaN(Number(cellData.value))))) {
+
+    // Cell doesn't exist or has no value
+    if (!cellData || cellData.value === undefined || cellData.value === null || cellData.value === '') {
+      invalidCells.push(cellId);
+      continue;
+    }
+
+    // Cell value is not a number
+    if (
+      (typeof cellData.value !== 'number') && 
+      (typeof cellData.value !== 'string' || isNaN(Number(cellData.value)))
+    ) {
       invalidCells.push(cellId);
     }
   }
-  
+
   return invalidCells;
 }

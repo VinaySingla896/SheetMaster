@@ -52,7 +52,7 @@ export class FormulaEvaluator {
     let sum = 0;
 
     for (const cellId of cells) {
-      const cellData = this.sheetData.cells[cellId];
+      const cellData = this.sheetData[cellId];
       if (cellData && typeof cellData.value === 'number') {
         sum += cellData.value;
       } else if (cellData && typeof cellData.value === 'string' && !isNaN(Number(cellData.value))) {

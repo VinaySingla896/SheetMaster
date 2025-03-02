@@ -50,15 +50,24 @@ export function FileMenu({ onNewFile, onLoadFile, sheetData }: FileMenuProps) {
     maxCol = Math.max(maxCol, 10);
 
     // Generate CSV content
-    for (let i = 0; i <= maxRow; i++) {
-      const rowData = [];
-      for (let j = 0; j <= maxCol; j++) {
-        const cellId = `${String.fromCharCode(65 + j)}:${i + 1}`;
-        const cellValue = cells[cellId]?.value || "";
-        // Escape quotes in CSV
-        rowData.push(`"${cellValue.toString().replace(/"/g, '""')}"`);
+    for (let row = 0; row <= maxRow; row++) {
+      const csvRow: string[] = [];
+
+      for (let col = 0; col <= maxCol; col++) {
+        const colLetter = String.fromCharCode(65 + col);
+        // Fix cell reference format to match grid component (A1 instead of A:1)
+        const cellKey = `${colLetter}${row + 1}`;
+        const cellValue = cells[cellKey]?.value || '';
+
+        // Properly handle CSV escaping for values with commas or quotes
+        if (cellValue.includes(',') || cellValue.includes('"') || cellValue.includes('\n')) {
+          csvRow.push(`"${cellValue.replace(/"/g, '""')}"`);
+        } else {
+          csvRow.push(cellValue);
+        }
       }
-      csvContent += rowData.join(",") + "\n";
+
+      csvContent += csvRow.join(',') + '\n';
     }
 
     // Create a Blob with the CSV content

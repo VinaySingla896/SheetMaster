@@ -302,7 +302,7 @@ export default function Home() {
   };
 
   const handleNewFile = () => {
-    setSheetData(INITIAL_SHEET);
+    setSheetData({...INITIAL_SHEET, cells: {}}); //Added cells:{} to clear existing data
   };
 
   const handleLoadFile = (file: File | null) => {
@@ -316,11 +316,14 @@ export default function Home() {
       reader.onload = (e) => {
         if (e.target && e.target.result) {
           const csvData = e.target.result as string;
-          console.log("CSV data:", csvData);
-          //  Implement CSV parsing and data loading here.  This is a complex task
-          //  and needs a dedicated CSV parsing library to handle various formats
-          //  and potential errors. For example, Papa Parse would be a good option.
-
+          // Placeholder for CSV parsing - Replace with a proper CSV parsing library
+          const parsedData = parseCSV(csvData); 
+          if(parsedData){
+            const newData = {...INITIAL_SHEET, cells: parsedData}
+            setSheetData(newData);
+          } else {
+            console.error("Failed to parse CSV data");
+          }
         } else {
           console.error("Failed to read file data");
         }
@@ -334,6 +337,23 @@ export default function Home() {
     } catch (error) {
       console.error("Error in handleLoadFile:", error);
     }
+  };
+
+
+  const parseCSV = (csvData: string): {[key: string]: CellData} | null => {
+    //This is a placeholder.  Use a library like Papa Parse for robust CSV parsing.
+    const lines = csvData.split('\n');
+    const cells: {[key:string]: CellData} = {};
+    if(lines.length > 0){
+      lines.forEach(line => {
+        const [key, value] = line.split(',');
+        if(key && value){
+          cells[key] = {value};
+        }
+      })
+      return cells;
+    }
+    return null;
   };
 
   const handleSaveFile = () => {

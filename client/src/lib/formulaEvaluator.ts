@@ -43,6 +43,18 @@ export class FormulaEvaluator {
       const range = formulaContent.substring(6, formulaContent.length - 1);
       return this.evaluateCount(range);
     }
+    
+    // TRIM function
+    if (formulaContent.startsWith("TRIM(") && formulaContent.endsWith(")")) {
+      const range = formulaContent.substring(5, formulaContent.length - 1);
+      return this.evaluateTrim(range);
+    }
+    
+    // CLEAN function
+    if (formulaContent.startsWith("CLEAN(") && formulaContent.endsWith(")")) {
+      const range = formulaContent.substring(6, formulaContent.length - 1);
+      return this.evaluateClean(range);
+    }
 
     return formula;
   }
@@ -142,6 +154,39 @@ export class FormulaEvaluator {
     }
 
     return count;
+  }
+  
+  private evaluateTrim(range: string): string {
+    const cells = this.getCellsFromRange(range);
+    // We'll take the first cell from the range for TRIM
+    if (cells.length === 0) return "";
+    
+    const cellId = cells[0];
+    const cellData = this.sheetData[cellId];
+    
+    if (!cellData || cellData.value === null || cellData.value === undefined) {
+      return "";
+    }
+    
+    const value = String(cellData.value);
+    return value.trim(); // Remove extra spaces from start and end
+  }
+  
+  private evaluateClean(range: string): string {
+    const cells = this.getCellsFromRange(range);
+    // We'll take the first cell from the range for CLEAN
+    if (cells.length === 0) return "";
+    
+    const cellId = cells[0];
+    const cellData = this.sheetData[cellId];
+    
+    if (!cellData || cellData.value === null || cellData.value === undefined) {
+      return "";
+    }
+    
+    const value = String(cellData.value);
+    // Remove non-printable characters (control characters, etc.)
+    return value.replace(/[^\x20-\x7E]/g, "");
   }
 
   private getCellsFromRange(range: string): string[] {

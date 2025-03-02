@@ -63,7 +63,21 @@ export function Toolbar({
       document.removeEventListener('formula-range-selected', handleFormulaRangeSelected as EventListener);
     };
   }, []);
+  const onFindReplace = (find: string, replace: string) => {
+    if (!onCellChange || !sheetData) return;
 
+    let updatedSheetData = { ...sheetData };
+
+    Object.entries(updatedSheetData.cells).forEach(([cellId, cellData]) => {
+      if (cellData.value && typeof cellData.value === "string" && cellData.value.includes(find)) {
+        const newValue = cellData.value.replace(new RegExp(find, "g"), replace);
+        updatedSheetData.cells[cellId] = { ...cellData, value: newValue };
+        onCellChange(cellId, newValue);
+      }
+    });
+
+    console.log(`Replaced "${find}" with "${replace}" in matching cells.`);
+  };
   return (
     <>
       <div className="flex items-center gap-2 p-2 border-b">

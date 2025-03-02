@@ -55,6 +55,24 @@ export class FormulaEvaluator {
       const range = formulaContent.substring(6, formulaContent.length - 1);
       return this.evaluateClean(range);
     }
+    
+    // UPPER function
+    if (formulaContent.startsWith("UPPER(") && formulaContent.endsWith(")")) {
+      const range = formulaContent.substring(6, formulaContent.length - 1);
+      return this.evaluateUpper(range);
+    }
+    
+    // LOWER function
+    if (formulaContent.startsWith("LOWER(") && formulaContent.endsWith(")")) {
+      const range = formulaContent.substring(6, formulaContent.length - 1);
+      return this.evaluateLower(range);
+    }
+    
+    // REMOVE_DUPLICATES function
+    if (formulaContent.startsWith("REMOVE_DUPLICATES(") && formulaContent.endsWith(")")) {
+      const range = formulaContent.substring(17, formulaContent.length - 1);
+      return this.evaluateRemoveDuplicates(range);
+    }
 
     return formula;
   }
@@ -179,6 +197,45 @@ export class FormulaEvaluator {
     
     // For CLEAN, we return an empty string as it's meant to clear the cell content
     return "";
+  }
+  
+  private evaluateUpper(range: string): string {
+    const cells = this.getCellsFromRange(range);
+    // We'll take the first cell from the range for UPPER
+    if (cells.length === 0) return "";
+    
+    const cellId = cells[0];
+    const cellData = this.sheetData[cellId];
+    
+    if (!cellData || cellData.value === null || cellData.value === undefined) {
+      return "";
+    }
+    
+    const value = String(cellData.value);
+    return value.toUpperCase(); // Convert to uppercase
+  }
+  
+  private evaluateLower(range: string): string {
+    const cells = this.getCellsFromRange(range);
+    // We'll take the first cell from the range for LOWER
+    if (cells.length === 0) return "";
+    
+    const cellId = cells[0];
+    const cellData = this.sheetData[cellId];
+    
+    if (!cellData || cellData.value === null || cellData.value === undefined) {
+      return "";
+    }
+    
+    const value = String(cellData.value);
+    return value.toLowerCase(); // Convert to lowercase
+  }
+  
+  private evaluateRemoveDuplicates(range: string): string {
+    // This function is different from others as it doesn't return a value to display
+    // It will be handled in the FormulaTestDialog component to actually modify the cells
+    // We'll return a message that describes what the function does
+    return "Removes duplicate rows from the selected range";
   }
 
   private getCellsFromRange(range: string): string[] {

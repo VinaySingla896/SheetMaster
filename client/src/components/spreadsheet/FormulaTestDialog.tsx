@@ -101,9 +101,16 @@ export function FormulaTestDialog({
           }
         });
 
+        // Determine which function was applied
+        let functionName = "UNKNOWN";
+        if (formula.match(/TRIM/i)) functionName = "TRIM";
+        else if (formula.match(/CLEAN/i)) functionName = "CLEAN";
+        else if (formula.match(/UPPER/i)) functionName = "UPPER";
+        else if (formula.match(/LOWER/i)) functionName = "LOWER";
+        
         toast({
           title: "Success",
-          description: `Applied ${formula.match(/TRIM/i) ? 'TRIM' : 'CLEAN'} function to ${cells.length} cell(s)`,
+          description: `Applied ${functionName} function to ${cells.length} cell(s)`,
         });
       }
     } catch (error) {
@@ -111,6 +118,101 @@ export function FormulaTestDialog({
     }
   };
 
+  const handleRemoveDuplicates = (range: string) => {
+    try {
+      // Parse the range
+      const [start, end] = range.split(':').map(cell => cell.trim());
+      if (!start || !end) {
+        toast({
+          title: "Invalid Range",
+          description: "Please specify a valid cell range (e.g., A1:C5)",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Extract column and row information
+      const startCol = start.match(/[A-Z]+/)?.[0] || '';
+      const startRow = parseInt(start.match(/\d+/)?.[0] || '0', 10);
+      const endCol = end.match(/[A-Z]+/)?.[0] || '';
+      const endRow = parseInt(end.match(/\d+/)?.[0] || '0', 10);
+      
+      // Extract column names in the range
+      const colToNum = (col: string) => {
+        let num = 0;
+        for (let i = 0; i < col.length; i++) {
+          num = num * 26 + (col.charCodeAt(i) - 64);
+        }
+        return num;
+      };
+
+      const numToCol = (num: number) => {
+        let result = '';
+        while (num > 0) {
+          const remainder = (num - 1) % 26;
+          result = String.fromCharCode(65 + remainder) + result;
+          num = Math.floor((num - 1) / 26);
+        }
+        return result;
+      };
+
+      const startColNum = colToNum(startCol);
+      const endColNum = colToNum(endCol);
+
+      const newData = { ...sheetData };
+      const rowsContent: Map<string, number> = new Map();
+      const duplicateRows: number[] = [];
+
+      // Identify duplicate rows
+      for (let row = startRow; row <= endRow; row++) {
+        let rowContent = '';
+
+        for (let colNum = startColNum; colNum <= endColNum; colNum++) {
+          const col = numToCol(colNum);
+          const cellKey = `${col}${row}`;
+          const cellValue = newData.cells[cellKey]?.value || '';
+          rowContent += `|${cellValue}|`;
+        }
+
+        if (rowsContent.has(rowContent)) {
+          duplicateRows.push(row);
+        } else {
+          rowsContent.set(rowContent, row);
+        }
+      }
+
+      // Clear duplicate rows
+      if (duplicateRows.length > 0) {
+        for (const row of duplicateRows) {
+          for (let colNum = startColNum; colNum <= endColNum; colNum++) {
+            const col = numToCol(colNum);
+            const cellKey = `${col}${row}`;
+            if (newData.cells[cellKey]) {
+              onCellChange(cellKey, "");
+            }
+          }
+        }
+
+        toast({
+          title: "Duplicates Removed",
+          description: `Removed ${duplicateRows.length} duplicate rows`,
+        });
+      } else {
+        toast({
+          title: "No Duplicates Found",
+          description: "No duplicate rows were found in the specified range",
+        });
+      }
+    } catch (error) {
+      console.error("Error removing duplicates:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove duplicates",
+        variant: "destructive"
+      });
+    }
+  };
+  
   const applyFormula = (formulaPrefix: string) => {
     setFormula(formulaPrefix + "()");
 
@@ -119,9 +221,26 @@ export function FormulaTestDialog({
       try {
         // Only validate numbers for mathematical functions, not data quality functions
         const isMathFunction = formulaPrefix.match(/^\s*=\s*(SUM|AVERAGE|MAX|MIN|COUNT)/i);
-        const isDataQualityFunction = formulaPrefix.match(/^\s*=\s*(TRIM|CLEAN)/i);
+        const isDataQualityFunction = formulaPrefix.match(/^\s*=\s*(TRIM|CLEAN|UPPER|LOWER)/i);
+        const isRemoveDuplicatesFunction = formulaPrefix.match(/^\s*=\s*REMOVE_DUPLICATES/i);
 
-        if (isMathFunction) {
+        if (isRemoveDuplicatesFunction) {
+          // Handle REMOVE_DUPLICATES function
+          const cells = parseCellRange(cellRange);
+          if (cells.length === 0) {
+            toast({
+              title: "Invalid Range",
+              description: "Please specify a valid cell range",
+              variant: "destructive",
+            });
+            return;
+          }
+          
+          // Process the range to find duplicates
+          handleRemoveDuplicates(cellRange);
+          return;
+          
+        } else if (isMathFunction) {
           const cells = parseCellRange(cellRange);
           const invalidCells = validateCellsContainNumbers(cells, sheetData);
 
@@ -151,6 +270,10 @@ export function FormulaTestDialog({
                   newValue = newValue.trim();
                 } else if (formula.match(/^\s*=\s*CLEAN/i)) {
                   newValue = ""; // Clear the cell content
+                } else if (formula.match(/^\s*=\s*UPPER/i)) {
+                  newValue = newValue.toUpperCase(); // Convert to uppercase
+                } else if (formula.match(/^\s*=\s*LOWER/i)) {
+                  newValue = newValue.toLowerCase(); // Convert to lowercase
                 }
 
                 // Update the cell with the cleaned/trimmed value
@@ -317,12 +440,36 @@ export function FormulaTestDialog({
               >
                 CLEAN
               </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => applyFormula("=UPPER")}
+              >
+                UPPER
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => applyFormula("=LOWER")}
+              >
+                LOWER
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => applyFormula("=REMOVE_DUPLICATES")}
+              >
+                REMOVE_DUPLICATES
+              </Button>
             </div>
             <div className="text-sm text-gray-500 mt-2">
               <p>Data quality functions:</p>
               <ul className="list-disc list-inside">
                 <li>TRIM - Removes extra spaces</li>
                 <li>CLEAN - Clears cell content (makes the cell blank)</li>
+                <li>UPPER - Converts text to uppercase</li>
+                <li>LOWER - Converts text to lowercase</li>
+                <li>REMOVE_DUPLICATES - Removes duplicate rows from a range</li>
               </ul>
             </div>
           </TabsContent>

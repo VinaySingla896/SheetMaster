@@ -18,6 +18,7 @@ const INITIAL_SHEET: SheetData = {
 
 export default function Home() {
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
+  const [selectedCells, setSelectedCells] = useState<{ [key: string]: boolean } | null>(null); //Added for multi-cell selection
   const [highlightText, setHighlightText] = useState<string>("");
   const [isFormulaSelectionMode, setIsFormulaSelectionMode] = useState(false);
   const [pendingFormulaRange, setPendingFormulaRange] = useState<string | null>(null);
@@ -184,12 +185,16 @@ export default function Home() {
   };
 
   const handleFormatChange = (format: Partial<CellData["format"]>) => {
-    if (!selectedCell) return;
+    if (!selectedCell && !selectedCells) return;
 
     const newData = { ...sheetData };
-    const cell = newData.cells[selectedCell] || { value: null, format: {} };
-    cell.format = { ...cell.format, ...format };
-    newData.cells[selectedCell] = cell;
+    const cellsToUpdate = selectedCells ? Object.keys(selectedCells).filter(key => selectedCells[key]) : [selectedCell!]; //Handle single and multi-select
+
+    cellsToUpdate.forEach(cellId => {
+      const cell = newData.cells[cellId] || { value: null, format: {} };
+      cell.format = { ...cell.format, ...format };
+      newData.cells[cellId] = cell;
+    });
 
     setSheetData(newData);
     updateSheet.mutate(newData);
@@ -323,6 +328,7 @@ export default function Home() {
             data={sheetData}
             highlightText={highlightText}
             onCellSelect={setSelectedCell}
+            onCellSelectMultiple={setSelectedCells} //Added prop for multi-select
             onCellChange={handleCellChange}
             onApplyFormula={handleApplyFormula}
             isFormulaSelectionMode={isFormulaSelectionMode}

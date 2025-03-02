@@ -77,6 +77,7 @@ export function Toolbar({
         <Input
           type="color"
           className="w-8 h-8 p-0"
+          defaultValue="#000000"
           onChange={(e) => onFormatChange({ color: e.target.value })}
         />
         <div className="border-l mx-2 h-6" />

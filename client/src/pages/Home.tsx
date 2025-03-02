@@ -359,16 +359,16 @@ export default function Home() {
     try {
       const lines = csvData.split('\n').filter(line => line.trim());
       const cells: {[key: string]: CellData} = {};
-      
+
       if (lines.length === 0) return null;
-      
+
       lines.forEach((line, rowIndex) => {
         // Parse CSV properly handling quoted values
         const getCellValues = (line: string): string[] => {
           const values: string[] = [];
           let inQuotes = false;
           let currentValue = "";
-          
+
           for (let i = 0; i < line.length; i++) {
             const char = line[i];
             if (char === '"') {
@@ -388,18 +388,18 @@ export default function Home() {
               currentValue += char;
             }
           }
-          
+
           // Add the last value
           values.push(currentValue);
           return values;
         };
-        
+
         const rowValues = getCellValues(line);
-        
+
         rowValues.forEach((value, colIndex) => {
           // Remove surrounding quotes if any
           value = value.replace(/^"(.*)"$/, '$1');
-          
+
           if (value.trim()) {
             // Use correct cell reference format (A1 instead of A:1)
             const cellId = `${String.fromCharCode(65 + colIndex)}${rowIndex + 1}`;
@@ -407,7 +407,7 @@ export default function Home() {
           }
         });
       });
-      
+
       console.log("Parsed CSV data:", cells);
       return cells;
     } catch (error) {

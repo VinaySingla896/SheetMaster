@@ -38,11 +38,16 @@ export function FileMenu({ onNewFile, onLoadFile, sheetData }: FileMenuProps) {
     let maxCol = 0;
 
     for (const cellId in cells) {
-      const [col, row] = cellId.split(':').map((part, index) => 
-        index === 0 ? part.charCodeAt(0) - 65 : parseInt(part) - 1
-      );
-      maxRow = Math.max(maxRow, row);
-      maxCol = Math.max(maxCol, col);
+      // Fix cellId parsing for format like 'A1' (not 'A:1')
+      const colMatch = cellId.match(/^[A-Z]+/);
+      const rowMatch = cellId.match(/\d+$/);
+
+      if (colMatch && rowMatch) {
+        const col = colMatch[0].charCodeAt(0) - 65;
+        const row = parseInt(rowMatch[0]) - 1;
+        maxRow = Math.max(maxRow, row);
+        maxCol = Math.max(maxCol, col);
+      }
     }
 
     // Ensure we export at least 10 rows and 10 columns of data

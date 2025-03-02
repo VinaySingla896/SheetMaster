@@ -52,9 +52,9 @@ export function FormulaTestDialog({
       // Parse cell range
       const cells = parseCellRange(cellRange);
 
-      // Only validate numbers for mathematical functions
+      // Only validate numbers for mathematical functions, not data quality functions
       const isMathFunction = formula.match(/^\s*=\s*(SUM|AVERAGE|MAX|MIN|COUNT)/i);
-      
+
       if (isMathFunction) {
         // Check if cells are valid and contain numbers
         const invalidCells = validateCellsContainNumbers(cells, sheetData);
@@ -93,13 +93,13 @@ export function FormulaTestDialog({
     // If we have a cell range, let's evaluate this formula right away
     if (cellRange) {
       try {
-        // Only validate numbers for mathematical functions
+        // Only validate numbers for mathematical functions, not data quality functions
         const isMathFunction = formulaPrefix.match(/^\s*=\s*(SUM|AVERAGE|MAX|MIN|COUNT)/i);
-        
+
         if (isMathFunction) {
           const cells = parseCellRange(cellRange);
           const invalidCells = validateCellsContainNumbers(cells, sheetData);
-          
+
           if (invalidCells.length > 0) {
             toast({
               title: "Invalid Cells",
@@ -109,7 +109,7 @@ export function FormulaTestDialog({
             return;
           }
         }
-        
+
         const formulaWithRange = formulaPrefix + `(${cellRange})`;
         const evaluator = new FormulaEvaluator(sheetData.cells);
         const testResult = evaluator.evaluateFormula(formulaWithRange);

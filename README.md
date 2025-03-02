@@ -17,15 +17,13 @@ A web-based spreadsheet application built with React, TypeScript, and Express.
 
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS, Shadcn UI
 - **Backend**: Express.js, Node.js
-- **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: Passport.js
+- **Authentication**: Passport.js (not currently implemented)
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 20+
-- PostgreSQL database
 
 ### Installation
 
@@ -33,10 +31,6 @@ A web-based spreadsheet application built with React, TypeScript, and Express.
 2. Install dependencies:
    ```
    npm install
-   ```
-3. Set up your database connection by creating environment variables:
-   ```
-   DATABASE_URL=postgres://username:password@hostname:port/database
    ```
 
 ### Development
@@ -66,7 +60,6 @@ npm run start
 - `/client` - Frontend React application
 - `/server` - Backend Express server
 - `/shared` - Shared types and schema definitions
-- `/migrations` - Database migration files
 
 ## License
 

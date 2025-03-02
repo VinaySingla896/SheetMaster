@@ -107,7 +107,7 @@ export function FormulaTestDialog({
         else if (formula.match(/CLEAN/i)) functionName = "CLEAN";
         else if (formula.match(/UPPER/i)) functionName = "UPPER";
         else if (formula.match(/LOWER/i)) functionName = "LOWER";
-        
+
         toast({
           title: "Success",
           description: `Applied ${functionName} function to ${cells.length} cell(s)`,
@@ -130,13 +130,13 @@ export function FormulaTestDialog({
         });
         return;
       }
-      
+
       // Extract column and row information
       const startCol = start.match(/[A-Z]+/)?.[0] || '';
       const startRow = parseInt(start.match(/\d+/)?.[0] || '0', 10);
       const endCol = end.match(/[A-Z]+/)?.[0] || '';
       const endRow = parseInt(end.match(/\d+/)?.[0] || '0', 10);
-      
+
       // Extract column names in the range
       const colToNum = (col: string) => {
         let num = 0;
@@ -212,7 +212,7 @@ export function FormulaTestDialog({
       });
     }
   };
-  
+
   const applyFormula = (formulaPrefix: string) => {
     setFormula(formulaPrefix + "()");
 
@@ -235,11 +235,11 @@ export function FormulaTestDialog({
             });
             return;
           }
-          
+
           // Process the range to find duplicates
           handleRemoveDuplicates(cellRange);
           return;
-          
+
         } else if (isMathFunction) {
           const cells = parseCellRange(cellRange);
           const invalidCells = validateCellsContainNumbers(cells, sheetData);
@@ -343,6 +343,95 @@ export function FormulaTestDialog({
       // Check if value is a number or can be converted to a number
       return isNaN(Number(value));
     });
+  };
+
+  const testFormula = () => {
+    if (!formula || !cellRange) return;
+
+    // Check if this is a data quality function
+    const isDataQualityFunction = formula.match(/^\s*=\s*(TRIM|CLEAN|UPPER|LOWER|REMOVE_DUPLICATES)/i);
+
+    try {
+      if (!cellRange) {
+        toast({
+          title: "No cell range specified",
+          description: "Please enter a valid cell range (e.g., A1:A5 or A1,B1,C1)",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // For mathematical functions, validate that cells contain numbers
+      if (formula.match(/^\s*=\s*(SUM|AVERAGE|MAX|MIN|COUNT)/i)) {
+        const cells = parseCellRange(cellRange);
+        const invalidCells = validateCellsContainNumbers(cells, sheetData);
+
+        if (invalidCells.length > 0) {
+          toast({
+            title: "Invalid Cells",
+            description: `Cells ${invalidCells.join(', ')} do not contain valid numbers. Formula can only be applied on numbers.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // Create formula with the actual cell range
+      let formulaWithRange = formula;
+      if (formula.includes("()")) {
+        formulaWithRange = formula.replace(/\(\)/, `(${cellRange})`);
+      } else if (!formula.includes("(")) {
+        formulaWithRange = `=${formula}(${cellRange})`;
+      } else if (!formula.match(/\([^)]+\)/)) {
+        formulaWithRange = formula.replace(/\(/, `(${cellRange}`);
+      }
+
+      const evaluator = new FormulaEvaluator(sheetData.cells);
+      const testResult = evaluator.evaluateFormula(formulaWithRange);
+      setResult(testResult);
+
+      // For data quality functions (TRIM and CLEAN), update the cell values directly
+      if (formula.match(/^\s*=\s*(TRIM|CLEAN|UPPER|LOWER)/i)) {
+        const cells = parseCellRange(cellRange);
+
+        // Apply the transformation to each cell
+        cells.forEach((cellId) => {
+          const cellData = sheetData.cells[cellId];
+          if (cellData && cellData.value !== undefined && cellData.value !== null) {
+            let newValue = String(cellData.value);
+
+            if (formula.match(/^\s*=\s*TRIM/i)) {
+              newValue = newValue.trim();
+            } else if (formula.match(/^\s*=\s*CLEAN/i)) {
+              newValue = ""; // Clear the cell content
+            } else if (formula.match(/^\s*=\s*UPPER/i)) {
+              newValue = newValue.toUpperCase();
+            } else if (formula.match(/^\s*=\s*LOWER/i)) {
+              newValue = newValue.toLowerCase();
+            }
+
+            // Update the cell with the cleaned/trimmed value
+            onCellChange(cellId, newValue);
+          }
+        });
+
+        // Determine which function was applied
+        let functionName = "UNKNOWN";
+        if (formula.match(/TRIM/i)) functionName = "TRIM";
+        else if (formula.match(/CLEAN/i)) functionName = "CLEAN";
+        else if (formula.match(/UPPER/i)) functionName = "UPPER";
+        else if (formula.match(/LOWER/i)) functionName = "LOWER";
+
+        toast({
+          title: "Success",
+          description: `Applied ${functionName} function to ${cells.length} cell(s)`,
+        });
+      } else if (formula.match(/^\s*=\s*REMOVE_DUPLICATES/i)) {
+        handleRemoveDuplicates(cellRange);
+      }
+    } catch (error) {
+      setResult(`Error: ${error instanceof Error ? error.message : String(error)}`);
+    }
   };
 
   return (
@@ -497,7 +586,9 @@ export function FormulaTestDialog({
 
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={onClose}>Close</Button>
-          <Button onClick={handleTest}>Test Formula</Button>
+          <Button onClick={testFormula} disabled={!cellRange || !formula}>
+            {formula.match(/^\s*=\s*(TRIM|CLEAN|UPPER|LOWER|REMOVE_DUPLICATES)/i) ? "Apply Formula" : "Test Formula"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

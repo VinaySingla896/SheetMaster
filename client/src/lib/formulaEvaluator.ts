@@ -43,31 +43,31 @@ export class FormulaEvaluator {
       const range = formulaContent.substring(6, formulaContent.length - 1);
       return this.evaluateCount(range);
     }
-    
+
     // TRIM function
     if (formulaContent.startsWith("TRIM(") && formulaContent.endsWith(")")) {
       const range = formulaContent.substring(5, formulaContent.length - 1);
       return this.evaluateTrim(range);
     }
-    
+
     // CLEAN function
     if (formulaContent.startsWith("CLEAN(") && formulaContent.endsWith(")")) {
       const range = formulaContent.substring(6, formulaContent.length - 1);
       return this.evaluateClean(range);
     }
-    
+
     // UPPER function
     if (formulaContent.startsWith("UPPER(") && formulaContent.endsWith(")")) {
       const range = formulaContent.substring(6, formulaContent.length - 1);
       return this.evaluateUpper(range);
     }
-    
+
     // LOWER function
     if (formulaContent.startsWith("LOWER(") && formulaContent.endsWith(")")) {
       const range = formulaContent.substring(6, formulaContent.length - 1);
       return this.evaluateLower(range);
     }
-    
+
     // REMOVE_DUPLICATES function
     if (formulaContent.startsWith("REMOVE_DUPLICATES(") && formulaContent.endsWith(")")) {
       const range = formulaContent.substring(17, formulaContent.length - 1);
@@ -173,64 +173,64 @@ export class FormulaEvaluator {
 
     return count;
   }
-  
+
   private evaluateTrim(range: string): string {
     const cells = this.getCellsFromRange(range);
     // We'll take the first cell from the range for TRIM
     if (cells.length === 0) return "";
-    
+
     const cellId = cells[0];
     const cellData = this.sheetData[cellId];
-    
+
     if (!cellData || cellData.value === null || cellData.value === undefined) {
       return "";
     }
-    
+
     const value = String(cellData.value);
     return value.trim(); // Remove extra spaces from start and end
   }
-  
+
   private evaluateClean(range: string): string {
     const cells = this.getCellsFromRange(range);
     // We'll take the first cell from the range for CLEAN
     if (cells.length === 0) return "";
-    
+
     // For CLEAN, we return an empty string as it's meant to clear the cell content
     return "";
   }
-  
+
   private evaluateUpper(range: string): string {
     const cells = this.getCellsFromRange(range);
     // We'll take the first cell from the range for UPPER
     if (cells.length === 0) return "";
-    
+
     const cellId = cells[0];
     const cellData = this.sheetData[cellId];
-    
+
     if (!cellData || cellData.value === null || cellData.value === undefined) {
       return "";
     }
-    
+
     const value = String(cellData.value);
     return value.toUpperCase(); // Convert to uppercase
   }
-  
+
   private evaluateLower(range: string): string {
     const cells = this.getCellsFromRange(range);
     // We'll take the first cell from the range for LOWER
     if (cells.length === 0) return "";
-    
+
     const cellId = cells[0];
     const cellData = this.sheetData[cellId];
-    
+
     if (!cellData || cellData.value === null || cellData.value === undefined) {
       return "";
     }
-    
+
     const value = String(cellData.value);
     return value.toLowerCase(); // Convert to lowercase
   }
-  
+
   private evaluateRemoveDuplicates(range: string): string {
     // This function is different from others as it doesn't return a value to display
     // It will be handled in the FormulaTestDialog component to actually modify the cells
@@ -289,5 +289,23 @@ export class FormulaEvaluator {
     }
 
     return letters;
+  }
+
+  // Data quality functions
+  evaluateDataQualityFunction(formula: string, args: string[]): string {
+    if (formula.startsWith('TRIM')) {
+      return args[0].trim();
+    } else if (formula.startsWith('CLEAN')) {
+      return ''; // Clean = make cell blank
+    } else if (formula.startsWith('UPPER')) {
+      return args[0].toUpperCase();
+    } else if (formula.startsWith('LOWER')) {
+      return args[0].toLowerCase();
+    } else if (formula.startsWith('REMOVE_DUPLICATES')) {
+      // This would typically need sheet-wide operations
+      // For preview purposes just return a message
+      return 'REMOVE_DUPLICATES applied';
+    }
+    return args[0];
   }
 }

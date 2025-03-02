@@ -29,10 +29,10 @@ export function FormulaHelp() {
               </ul>
               <h4 className="font-semibold mt-2">Data Quality Functions:</h4>
               <ul className="list-disc pl-4">
-                <li><code>=TRIM(A1)</code> - Remove whitespace</li>
-                <li><code>=UPPER(A1)</code> - Convert to uppercase</li>
-                <li><code>=LOWER(A1)</code> - Convert to lowercase</li>
-                <li><code>=FIND_AND_REPLACE(A1,"old","new")</code> - Replace text</li>
+                <li><code>=TRIM(A1:A5)</code> - Remove whitespace</li>
+                <li><code>=CLEAN(A1:A5)</code> - Clear cell content</li>
+                <li><code>=UPPER(A1:A5)</code> - Convert to uppercase</li>
+                <li><code>=LOWER(A1:A5)</code> - Convert to lowercase</li>
                 <li><code>=REMOVE_DUPLICATES(A1:C5)</code> - Remove duplicate rows</li>
               </ul>
             </div>

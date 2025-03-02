@@ -14,7 +14,6 @@ interface FormulaTestDialogProps {
   onClose: () => void;
   sheetData: SheetData;
   initialCellRange?: string;
-  onSelectCells?: () => void;
 }
 
 export function FormulaTestDialog({
@@ -22,7 +21,6 @@ export function FormulaTestDialog({
   onClose,
   sheetData,
   initialCellRange = "",
-  onSelectCells,
 }: FormulaTestDialogProps) {
   const [activeTab, setActiveTab] = useState("math");
   const [formula, setFormula] = useState("");
@@ -55,7 +53,7 @@ export function FormulaTestDialog({
       // Parse cell range
       const cells = parseCellRange(cellRange);
       
-      // Check if all cells contain numbers
+      // Check if cells are valid and contain numbers
       const invalidCells = validateCellsContainNumbers(cells, sheetData);
       
       if (invalidCells.length > 0) {
@@ -68,7 +66,14 @@ export function FormulaTestDialog({
       }
       
       // Create formula with the actual cell range
-      const formulaWithRange = formula.replace(/\([^)]*\)/, `(${cellRange})`);
+      let formulaWithRange = formula;
+      if (formula.includes("()")) {
+        formulaWithRange = formula.replace(/\(\)/, `(${cellRange})`);
+      } else if (!formula.includes("(")) {
+        formulaWithRange = `=${formula}(${cellRange})`;
+      } else if (!formula.match(/\([^)]+\)/)) {
+        formulaWithRange = formula.replace(/\(/, `(${cellRange}`);
+      }
       
       const evaluator = new FormulaEvaluator(sheetData.cells);
       const testResult = evaluator.evaluateFormula(formulaWithRange);
@@ -145,19 +150,9 @@ export function FormulaTestDialog({
               placeholder="e.g., A1:A5 or A1,B1,C1"
               className="mt-1"
             />
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="mt-1"
-              onClick={() => {
-                onSelectCells?.(); // This will trigger selection mode in the parent
-              }}
-            >
-              Select
-            </Button>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            Enter a range or click 'Select' to choose cells visually
+            Enter a range (e.g., A1:A5 or A1,B1,C1)
           </p>
         </div>
 
@@ -172,35 +167,35 @@ export function FormulaTestDialog({
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => applyFormula("=SUM()")}
+                onClick={() => applyFormula("=SUM")}
               >
                 SUM
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => applyFormula("=AVERAGE()")}
+                onClick={() => applyFormula("=AVERAGE")}
               >
                 AVERAGE
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => applyFormula("=MAX()")}
+                onClick={() => applyFormula("=MAX")}
               >
                 MAX
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => applyFormula("=MIN()")}
+                onClick={() => applyFormula("=MIN")}
               >
                 MIN
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => applyFormula("=COUNT()")}
+                onClick={() => applyFormula("=COUNT")}
               >
                 COUNT
               </Button>

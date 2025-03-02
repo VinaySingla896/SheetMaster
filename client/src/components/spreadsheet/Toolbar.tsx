@@ -114,7 +114,7 @@ export function Toolbar({
         isOpen={isFormulaTestOpen}
         onClose={() => setIsFormulaTestOpen(false)}
         sheetData={sheetData}
-        selectedFormulaRange={selectedFormulaRange}
+        initialCellRange={selectedFormulaRange}
       />
     </>
   );

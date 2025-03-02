@@ -181,15 +181,18 @@ export function FileMenu({ onNewFile, onLoadFile, sheetData }: FileMenuProps) {
               })) : 0)
           };
 
+          // Pass the parsed sheet data directly instead of the file
           onLoadFile(newSheetData);
 
           // Reset file input
-          event.target.value = '';
+          if (event.target) {
+            event.target.value = '';
+          }
 
           setIsOpen(false);
           toast({
             title: "File Loaded",
-            description: "Successfully imported CSV data",
+            description: `Successfully imported ${Object.keys(newCells).length} cells`,
           });
         } catch (error) {
           console.error("Error processing CSV:", error);

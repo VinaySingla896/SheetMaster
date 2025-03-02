@@ -310,9 +310,23 @@ export default function Home() {
     });
   };
 
-  const handleLoadFile = (file: File | null) => {
-    if (!file) {
-      console.log("No file provided to handleLoadFile");
+  // Handle loading a file or directly loading parsed sheet data
+  const handleLoadFile = (fileOrData: File | SheetData) => {
+    // If we receive a SheetData object directly
+    if (typeof fileOrData === 'object' && 'cells' in fileOrData) {
+      console.log("Received parsed sheet data:", fileOrData);
+      setSheetData(fileOrData);
+      toast({
+        title: "File Loaded",
+        description: `Successfully imported data with ${Object.keys(fileOrData.cells).length} cells`
+      });
+      return;
+    }
+
+    // If we receive a File object
+    const file = fileOrData as File;
+    if (!file || !(file instanceof File)) {
+      console.log("No valid file provided to handleLoadFile");
       return;
     }
 
@@ -321,7 +335,7 @@ export default function Home() {
       reader.onload = (e) => {
         if (e.target && e.target.result) {
           const csvData = e.target.result as string;
-          // Placeholder for CSV parsing - Replace with a proper CSV parsing library
+          // Parse the CSV data
           const parsedData = parseCSV(csvData); 
           if(parsedData){
             console.log("Loaded CSV data:", parsedData);
